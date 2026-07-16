@@ -83,6 +83,7 @@ export default function Camera() {
         if (availableCameras.length === 0) {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter((d) => d.kind === "videoinput");
+          console.log("Video devices: ", videoDevices);
           setAvailableCameras(videoDevices);
         }
 
