@@ -1,7 +1,5 @@
-import CameraPage from "./pages/Camera/Camera.page";
-import TestingPage from "./pages/Testing/Testing.page";
-import Camera from "./Camera";
+import CameraPage from "./pages/Camera/Camera.page.v2";
 
 export default function App() {
-  return <Camera />;
+  return <CameraPage />;
 }
