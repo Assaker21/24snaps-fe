@@ -65,6 +65,14 @@ export default function Camera() {
   }, []);
 
   /**
+   * Small delay to allow the browser to release camera hardware.
+   * Firefox Android (and some other mobile browsers) need this
+   * between stopping a track and requesting a new getUserMedia,
+   * otherwise "Starting videoinput failed" is thrown.
+   */
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  /**
    * Start / restart the camera stream.
    *
    * - `deviceId` – exact camera to use (null = let browser pick via facingMode)
@@ -87,6 +95,20 @@ export default function Camera() {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       imageCaptureRef.current = null;
+    }
+
+    // Clear the video element's srcObject so it doesn't hold a stale reference
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    // Firefox Android needs time to release the camera hardware before
+    // a new getUserMedia request can acquire it. Without this delay,
+    // switching cameras produces "DOMException: Starting videoinput failed".
+    // Only apply on the initial call (retry === true) to avoid piling up
+    // delays during fallback retries.
+    if (retry) {
+      await delay(300);
     }
 
     const constraints = buildConstraints(deviceId, mode);
@@ -133,10 +155,10 @@ export default function Camera() {
         setZoomInfo(null);
       }
 
-      // 3. Enumerate cameras if we haven't yet (permission is now granted)
-      if (availableCamerasRef.current.length === 0) {
-        await enumerateCameras();
-      }
+      // 3. Enumerate cameras to keep the device list fresh.
+      // Firefox Android changes deviceId after every getUserMedia call,
+      // so we must re-enumerate each time, not just on first boot.
+      await enumerateCameras();
 
       // 4. Sync active device ID with the actual hardware track
       const trackSettings = videoTrack.getSettings
@@ -173,6 +195,13 @@ export default function Camera() {
         isStartingRef.current = false;
         await startCameraImpl(null, mode, false);
         return;
+      }
+
+      // All retries exhausted – reset any stale UI state so the user
+      // doesn't see phantom zoom controls or lens labels
+      if (isMountedRef.current) {
+        setActiveDeviceId(null);
+        setZoomInfo(null);
       }
     } finally {
       isStartingRef.current = false;
