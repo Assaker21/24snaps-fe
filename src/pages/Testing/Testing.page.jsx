@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Camera } from "react-camera-pro";
 import "webrtc-adapter";
 
 export default function TestingPage() {
@@ -132,6 +133,7 @@ export default function TestingPage() {
           </div>
         ))}
       </div>
+      <Camera videoSourceDeviceId={deviceId} />
     </div>
   );
 }

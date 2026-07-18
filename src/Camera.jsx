@@ -1,4 +1,27 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import "webrtc-adapter";
+
+/**
+ * Build getUserMedia constraints.
+ * Never set both deviceId AND facingMode to avoid OverconstrainedError on Safari.
+ */
+function buildConstraints(deviceId, facingMode) {
+  const video = {
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30 },
+  };
+
+  if (deviceId) {
+    // Exact deviceId is the most specific — no facingMode allowed alongside
+    video.deviceId = { exact: deviceId };
+  } else {
+    // Fall back to facing direction
+    video.facingMode = facingMode || "environment";
+  }
+
+  return { audio: false, video };
+}
 
 export default function Camera() {
   const videoRef = useRef(null);
@@ -6,6 +29,8 @@ export default function Camera() {
   const imageCaptureRef = useRef(null);
   const streamRef = useRef(null);
   const isStartingRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const availableCamerasRef = useRef([]);
 
   // Camera State
   const [facingMode, setFacingMode] = useState("environment");
@@ -22,94 +47,153 @@ export default function Camera() {
     return "1x";
   };
 
-  const startCamera = useCallback(
-    async (deviceId = null, mode = "environment") => {
-      // Prevent rapid double-clicks from causing stream crashes
-      if (isStartingRef.current) return;
-      isStartingRef.current = true;
+  /** Enumerate video devices (must have active camera permissions first). */
+  const enumerateCameras = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === "videoinput");
+      console.log("Video devices:", videoDevices);
+      availableCamerasRef.current = videoDevices;
+      if (isMountedRef.current) {
+        setAvailableCameras(videoDevices);
+      }
+      return videoDevices;
+    } catch (err) {
+      console.error("Failed to enumerate devices:", err);
+      return [];
+    }
+  }, []);
 
-      // Instantly kill the old stream to free up hardware
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+  /**
+   * Start / restart the camera stream.
+   *
+   * - `deviceId` – exact camera to use (null = let browser pick via facingMode)
+   * - `mode`     – facing direction (only used when deviceId is null)
+   * - `retry`    – used internally; set to false to prevent infinite recursion
+   *
+   * Uses a regular async function so it can reference itself for retry logic.
+   */
+  async function startCameraImpl(deviceId, mode, retry) {
+    deviceId = deviceId ?? null;
+    mode = mode ?? "environment";
+    retry = retry ?? true;
+
+    // Prevent rapid calls
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
+
+    // Stop old stream before requesting new one
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      imageCaptureRef.current = null;
+    }
+
+    const constraints = buildConstraints(deviceId, mode);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      if (!isMountedRef.current) {
+        // Component unmounted while we were waiting
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
 
-      const constraints = {
-        audio: false,
-        video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 60, min: 30 },
-        },
-      };
+      streamRef.current = stream;
 
-      // Prioritize specific lens (deviceId), fallback to facing direction
-      if (deviceId) {
-        constraints.video.deviceId = { exact: deviceId };
-      } else {
-        constraints.video.facingMode = mode;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        streamRef.current = stream;
+      const videoTrack = stream.getVideoTracks()[0];
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-
-        const videoTrack = stream.getVideoTracks()[0];
-
-        // 1. Initialize ImageCapture
-        if ("ImageCapture" in window) {
+      // 1. Initialize ImageCapture (if supported)
+      if ("ImageCapture" in window) {
+        try {
           imageCaptureRef.current = new window.ImageCapture(videoTrack);
+        } catch {
+          // Some browsers expose ImageCapture but it may throw
+          imageCaptureRef.current = null;
         }
-
-        // 2. Hardware Zoom Support Detection
-        const capabilities = videoTrack.getCapabilities
-          ? videoTrack.getCapabilities()
-          : {};
-        if (capabilities.zoom) {
-          setZoomInfo({
-            min: capabilities.zoom.min,
-            max: capabilities.zoom.max,
-            step: capabilities.zoom.step || 0.1,
-            current: videoTrack.getSettings().zoom || 1,
-          });
-        } else {
-          setZoomInfo(null);
-        }
-
-        // 3. Enumerate all cameras if we haven't yet (requires permissions first to get labels)
-        if (availableCameras.length === 0) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter((d) => d.kind === "videoinput");
-          console.log("Video devices: ", videoDevices);
-          setAvailableCameras(videoDevices);
-        }
-
-        // Sync active device ID state with the actual hardware track chosen
-        const activeDevice = availableCameras.find(
-          (d) => d.label === videoTrack.label,
-        );
-        if (activeDevice) {
-          setActiveDeviceId(activeDevice.deviceId);
-        }
-
-        await videoRef.current?.play();
-      } catch (error) {
-        console.error("Failed to start camera:", error);
-      } finally {
-        isStartingRef.current = false;
       }
-    },
-    [availableCameras],
-  );
 
-  // Initial Boot
+      // 2. Hardware Zoom Support Detection
+      const capabilities = videoTrack.getCapabilities
+        ? videoTrack.getCapabilities()
+        : {};
+      if (capabilities.zoom) {
+        setZoomInfo({
+          min: capabilities.zoom.min,
+          max: capabilities.zoom.max,
+          step: capabilities.zoom.step || 0.1,
+          current: videoTrack.getSettings().zoom || 1,
+        });
+      } else {
+        setZoomInfo(null);
+      }
+
+      // 3. Enumerate cameras if we haven't yet (permission is now granted)
+      if (availableCamerasRef.current.length === 0) {
+        await enumerateCameras();
+      }
+
+      // 4. Sync active device ID with the actual hardware track
+      const trackSettings = videoTrack.getSettings
+        ? videoTrack.getSettings()
+        : {};
+      const devices = availableCamerasRef.current;
+      const activeDevice =
+        devices.find((d) => d.deviceId === trackSettings.deviceId) ||
+        devices.find((d) => d.label === videoTrack.label) ||
+        devices[0];
+      if (activeDevice && isMountedRef.current) {
+        setActiveDeviceId(activeDevice.deviceId);
+      }
+
+      // 5. Start playback
+      if (videoRef.current) {
+        await videoRef.current.play();
+      }
+    } catch (error) {
+      console.error("Failed to start camera:", error);
+
+      // Retry once with relaxed constraints (remove width/height/frameRate ideals)
+      if (retry) {
+        console.warn("Retrying with relaxed constraints...");
+        // Kill isStartingRef so the recursive call can proceed
+        isStartingRef.current = false;
+        await startCameraImpl(deviceId, mode, false);
+        return; // Don't clear the flag again below
+      }
+
+      // Final fallback: try without deviceId if it was set
+      if (deviceId) {
+        console.warn("Retrying without deviceId...");
+        isStartingRef.current = false;
+        await startCameraImpl(null, mode, false);
+        return;
+      }
+    } finally {
+      isStartingRef.current = false;
+    }
+  }
+
+  // Memoized version so it stays stable across re-renders
+  // startCameraImpl is a hoisted function declaration (stable reference) — not needed in deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const startCamera = useCallback(startCameraImpl, [enumerateCameras]);
+
+  // Initial Boot – runs only once thanks to the ref guard
   useEffect(() => {
+    isMountedRef.current = true;
     startCamera(null, "environment");
     return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      isMountedRef.current = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
     };
   }, [startCamera]);
 
@@ -121,13 +205,29 @@ export default function Camera() {
     startCamera(null, nextMode); // Pass null for deviceId to rely on facingMode
   };
 
-  const cycleLenses = () => {
-    // Filter for back cameras only
-    const backCams = availableCameras.filter(
-      (cam) =>
-        cam.label.toLowerCase().includes("back") ||
-        cam.label.toLowerCase().includes("environment"),
+  /**
+   * Determine whether a device is a rear/environment camera.
+   * Uses label heuristics for cross-browser compatibility.
+   */
+  const isBackCamera = (cam) => {
+    const lower = cam.label.toLowerCase();
+    return (
+      lower.includes("back") ||
+      lower.includes("rear") ||
+      lower.includes("environment") ||
+      // Some Android devices omit "back" but have multiple cameras;
+      // if the label contains "ultra", "telephoto", "wide", "macro" it's typically back
+      lower.includes("ultra") ||
+      lower.includes("telephoto") ||
+      // Fallback: assume a non-front camera is back
+      (!lower.includes("front") && !lower.includes("user") && lower.length > 0)
     );
+  };
+
+  const cycleLenses = () => {
+    const devices = availableCamerasRef.current;
+    // Filter for back cameras only
+    const backCams = devices.filter(isBackCamera);
 
     if (backCams.length < 2) return; // No alternative lenses available
 
@@ -142,15 +242,16 @@ export default function Camera() {
   };
 
   // Zoom updates hardware instantly via track constraints (no stream restart required)
+
   const handleZoomChange = (e) => {
     const newZoom = parseFloat(e.target.value);
     setZoomInfo((prev) => ({ ...prev, current: newZoom }));
 
     const track = streamRef.current?.getVideoTracks()[0];
     if (track && track.applyConstraints) {
-      // Execute asynchronously so the slider UI doesn't stutter
+      // Use flat constraint (not advanced[]) for Safari compatibility
       track
-        .applyConstraints({ advanced: [{ zoom: newZoom }] })
+        .applyConstraints({ zoom: newZoom })
         .catch((err) => console.error(err));
     }
   };
@@ -194,9 +295,7 @@ export default function Camera() {
     (d) => d.deviceId === activeDeviceId,
   );
   const lensText = activeLens ? getLensLabel(activeLens.label) : "1x";
-  const backCamsCount = availableCameras.filter((c) =>
-    c.label.toLowerCase().includes("back"),
-  ).length;
+  const backCamsCount = availableCameras.filter(isBackCamera).length;
 
   return (
     <div className="w-screen h-screen absolute top-0 left-0 bg-black overflow-hidden flex flex-col">
