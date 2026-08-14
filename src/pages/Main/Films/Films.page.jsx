@@ -5,6 +5,7 @@ import eventsService from "../../../services/events.service";
 import attachmentsService from "../../../services/attachments.service";
 import Button from "../../../components/Button.component";
 import { formatCountdown } from "../../../utils/countdown.util";
+import { encodeId } from "../../../utils/idCodec.util";
 
 export default function FilmsPage() {
   const [events, setEvents] = useState(null);
@@ -54,7 +55,7 @@ export default function FilmsPage() {
           {events.map((event) => (
             <Link
               key={event.id}
-              to={`/events/${event.id}`}
+              to={`/events/${encodeId(event.id)}`}
               className="flex flex-row items-center gap-3 bg-gray-100 border border-gray-200 rounded-2xl p-3"
             >
               <div

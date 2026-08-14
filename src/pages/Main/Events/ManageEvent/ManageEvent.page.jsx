@@ -9,27 +9,25 @@ import {
 } from "lucide-react";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
-import usersService from "../../../../services/users.service";
 import Button from "../../../../components/Button.component";
-import Input from "../../../../components/Input.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import cn from "../../../../utils/cn.util";
+import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
 
 export default function ManageEventPage() {
-  const { eventId } = useParams();
+  const { eventId: encodedEventId } = useParams();
+  const eventId = decodeId(encodedEventId);
   const navigate = useNavigate();
-  const { user, setUser, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [event, setEvent] = useState(null);
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     if (!authLoading) load();
@@ -59,19 +57,19 @@ export default function ManageEventPage() {
     }
   }
 
-  async function handleJoin() {
-    setJoining(true);
-    if (name.trim()) {
-      await usersService.update(user.id, { firstName: name.trim() });
-      setUser((u) => ({ ...u, firstName: name.trim() }));
-    }
-    await eventsService.update(eventId, {
-      participants: { connect: { id: user.id } },
-    });
-    navigate(`/events/${eventId}/camera`);
-  }
+  const isCreator = event && user && event.creatorId === user.id;
+  const isParticipant =
+    event && user && event.participants?.some((p) => p.id === user.id);
 
-  if (authLoading || loading || !user) {
+  // Non-participants only ever land here via a shared link that predates the
+  // dedicated invitation route — send them there instead of joining inline.
+  useEffect(() => {
+    if (event && user && !isCreator && !isParticipant) {
+      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
+    }
+  }, [event, user, isCreator, isParticipant, eventId, navigate]);
+
+  if (authLoading || loading || !user || (event && !isCreator && !isParticipant)) {
     return (
       <div className="min-h-dvh flex items-center justify-center text-sm text-gray-500">
         Loading…
@@ -92,9 +90,6 @@ export default function ManageEventPage() {
     );
   }
 
-  const isCreator = event.creatorId === user.id;
-  const isParticipant = event.participants?.some((p) => p.id === user.id);
-
   if (isCreator && !event.paidAt) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
@@ -104,27 +99,6 @@ export default function ManageEventPage() {
         </p>
         <Button variant="primary" onClick={handleCheckoutRetry}>
           Complete payment
-        </Button>
-      </div>
-    );
-  }
-
-  if (!isCreator && !isParticipant) {
-    return (
-      <div className="min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="font-serif text-2xl max-w-70">{event.name}</h1>
-        <p className="text-sm text-gray-500">
-          You've been invited by{" "}
-          {event.creator?.firstName || "the host"}.
-        </p>
-        <Input
-          placeholder="Enter your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="max-w-60"
-        />
-        <Button variant="primary" onClick={handleJoin} disabled={joining}>
-          {joining ? "Joining…" : "Take your camera"}
         </Button>
       </div>
     );
@@ -187,7 +161,7 @@ export default function ManageEventPage() {
               Invite
             </Button>
           )}
-          <Link to={`/events/${eventId}/camera`} className="flex-1">
+          <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
             <Button variant="primary" className="w-full justify-center">
               <CameraIcon size={16} />
               Camera

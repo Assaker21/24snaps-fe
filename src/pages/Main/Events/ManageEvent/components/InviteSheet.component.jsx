@@ -3,10 +3,11 @@ import { Drawer } from "vaul";
 import QRCode from "react-qr-code";
 import { LinkIcon, DownloadIcon, XIcon } from "lucide-react";
 import Button from "../../../../../components/Button.component";
+import { encodeId } from "../../../../../utils/idCodec.util";
 
 export default function InviteSheet({ open, setOpen, event }) {
   const qrRef = useRef(null);
-  const inviteUrl = `${window.location.origin}/events/${event.id}`;
+  const inviteUrl = `${window.location.origin}/events/invitation/${encodeId(event.id)}`;
 
   async function handleShareLink() {
     if (navigator.share) {

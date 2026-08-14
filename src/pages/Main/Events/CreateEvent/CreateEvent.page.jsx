@@ -16,7 +16,10 @@ import { Link, useNavigate } from "react-router";
 import Input from "../../../../components/Input.component";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
+import usersService from "../../../../services/users.service";
 import uploadFile from "../../../../utils/upload.util";
+import { encodeId } from "../../../../utils/idCodec.util";
+import { useAuth } from "../../../../contexts/Auth.context";
 
 const PARTICIPANT_PLANS = [
   { id: 1, number: 5, price: 0 },
@@ -38,6 +41,7 @@ function equalDates(d1, d2) {
 }
 
 export default function CreateEventPage() {
+  const { user, setUser, isGuest, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
   const [value, setValue] = useState({
     name: "",
@@ -51,7 +55,24 @@ export default function CreateEventPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [guestName, setGuestName] = useState("");
   const navigate = useNavigate();
+
+  // Resolved once, the render where auth finishes loading, and frozen from then on so the
+  // wizard's step count can't shift under the user mid-flow — e.g. once they've entered
+  // their name and it lands on `user`, that shouldn't retroactively remove the step.
+  // (React-documented "adjust state during render" pattern — not an effect, so it commits
+  // in the same render instead of causing an extra flash.)
+  const [needsNameStep, setNeedsNameStep] = useState(null);
+  const [resolvedAuthLoading, setResolvedAuthLoading] = useState(authLoading);
+  if (authLoading !== resolvedAuthLoading) {
+    setResolvedAuthLoading(authLoading);
+    if (!authLoading) {
+      setNeedsNameStep(isGuest && !user?.firstName);
+    }
+  }
+
+  const resolvedName = user?.firstName || guestName.trim();
 
   async function handleCreate() {
     setSubmitting(true);
@@ -117,10 +138,42 @@ export default function CreateEventPage() {
       return;
     }
 
-    navigate(`/events/${event.id}`);
+    navigate(`/events/${encodeId(event.id)}`);
   }
 
+  const nameSuggestions = resolvedName
+    ? [
+        `${resolvedName}'s party`,
+        `${resolvedName}'s Birthday`,
+        `${resolvedName}'s Wedding day`,
+        "Our Anniversary",
+        "Our Little Party",
+      ]
+    : [
+        "Bloack Head's party",
+        "Bloack Head's Birthday",
+        "Bloack Head's Wedding day",
+        "Our Anniversary",
+        "Our Little Party",
+      ];
+
+  const nameStep = {
+    title: "What's your name?",
+    description:
+      "We'll use this to greet you and personalize\nsuggestions for your event.",
+    control: () => (
+      <div className="flex flex-col w-full">
+        <Input
+          autoFocus
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+        />
+      </div>
+    ),
+  };
+
   const steps = [
+    ...(needsNameStep ? [nameStep] : []),
     {
       title: "What is the name of your event?",
       description:
@@ -140,13 +193,7 @@ export default function CreateEventPage() {
               Suggestions
             </p>
             <div className="flex flex-col gap-2 items-start">
-              {[
-                "Bloack Head's party",
-                "Bloack Head's Birthday",
-                "Bloack Head's Wedding day",
-                "Our Anniversary",
-                "Our Little Party",
-              ].map((suggestion) => {
+              {nameSuggestions.map((suggestion) => {
                 return (
                   <button
                     key={suggestion}
@@ -486,16 +533,35 @@ export default function CreateEventPage() {
     },
   ];
 
+  const onNameStep = needsNameStep && step === 0;
+
+  if (needsNameStep === null) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center text-sm text-gray-500">
+        Loading…
+      </div>
+    );
+  }
+
   return (
     <form
       className="flex flex-col h-dvh"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
+        if (onNameStep && !guestName.trim()) return;
+
         if (step >= steps.length - 1) {
           if (!submitting) handleCreate();
-        } else {
-          setStep((s) => ++s);
+          return;
         }
+
+        if (onNameStep) {
+          const trimmed = guestName.trim();
+          await usersService.update(user.id, { firstName: trimmed });
+          setUser((u) => ({ ...u, firstName: trimmed }));
+        }
+
+        setStep((s) => s + 1);
       }}
     >
       <div className="flex flex-row px-2 pt-2">
@@ -573,7 +639,7 @@ export default function CreateEventPage() {
         <button
           className="absolute right-2 bottom-2 bg-black text-white flex flex-row gap-2 px-3 py-2 rounded-2xl items-center disabled:opacity-50"
           type="submit"
-          disabled={submitting}
+          disabled={submitting || (onNameStep && !guestName.trim())}
         >
           {steps.length - 1 == step
             ? submitting

@@ -58,7 +58,12 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setSavingCover(true);
-    const storageKey = await uploadFile(file, file.type);
+    const storageKey = await uploadFile(file, file.type, {
+      eventId: event.id,
+      type: "PICTURE",
+      isCover: true,
+      fileName: file.name,
+    });
     const attachmentResponse = await attachmentsService.create({
       storageKey,
       type: "PICTURE",
