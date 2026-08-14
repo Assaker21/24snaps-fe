@@ -6,6 +6,7 @@ import {
   DownloadIcon,
   QrCodeIcon,
   SettingsIcon,
+  XIcon,
 } from "lucide-react";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
@@ -16,6 +17,10 @@ import cn from "../../../../utils/cn.util";
 import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
+
+function extensionFromContentType(contentType) {
+  return (contentType?.split("/")[1] || "jpg").split("+")[0];
+}
 
 export default function ManageEventPage() {
   const { eventId: encodedEventId } = useParams();
@@ -28,6 +33,8 @@ export default function ManageEventPage() {
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [viewerAttachment, setViewerAttachment] = useState(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (!authLoading) load();
@@ -54,6 +61,28 @@ export default function ManageEventPage() {
       window.location.href = response.data.checkoutUrl;
     } else {
       load();
+    }
+  }
+
+  async function handleDownload(attachment) {
+    const src = attachmentsService.getDownloadSrc(attachment);
+    if (!src) return;
+
+    setDownloading(true);
+    try {
+      const blob = await fetch(src).then((r) => r.blob());
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `${event?.name || "moment"}-${attachment.id}.${extensionFromContentType(blob.type)}`;
+      link.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // CORS/network hiccup fetching the blob — fall back to a plain navigation
+      // so the user can still save the image manually.
+      window.open(src, "_blank");
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -181,14 +210,21 @@ export default function ManageEventPage() {
               key={attachment.id}
               className="relative aspect-square rounded-2xl overflow-hidden bg-gray-200"
             >
-              <img
-                src={attachmentsService.getDownloadSrc(attachment)}
-                alt=""
-                className={cn(
-                  "w-full h-full object-cover",
-                  !revealed && "blur-xl scale-110",
-                )}
-              />
+              <button
+                type="button"
+                onClick={() => revealed && setViewerAttachment(attachment)}
+                disabled={!revealed}
+                className={cn("w-full h-full block", revealed && "cursor-pointer")}
+              >
+                <img
+                  src={attachmentsService.getDownloadSrc(attachment)}
+                  alt=""
+                  className={cn(
+                    "w-full h-full object-cover",
+                    !revealed && "blur-xl scale-110",
+                  )}
+                />
+              </button>
               {!revealed && (
                 <div className="absolute inset-0 flex items-center justify-center px-2">
                   <span className="bg-black/50 text-white text-xs rounded-full px-3 py-1 text-center">
@@ -211,6 +247,31 @@ export default function ManageEventPage() {
         event={event}
         onUpdated={load}
       />
+
+      {viewerAttachment && (
+        <div className="fixed inset-0 z-260 bg-black/90 flex flex-col items-center justify-center p-4 gap-6">
+          <button
+            onClick={() => setViewerAttachment(null)}
+            className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
+            aria-label="Close"
+          >
+            <XIcon size={20} />
+          </button>
+          <img
+            src={attachmentsService.getDownloadSrc(viewerAttachment)}
+            alt=""
+            className="max-w-full max-h-[75vh] object-contain rounded-lg"
+          />
+          <Button
+            variant="secondary"
+            onClick={() => handleDownload(viewerAttachment)}
+            disabled={downloading}
+          >
+            <DownloadIcon size={16} />
+            {downloading ? "Downloading…" : "Download"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
