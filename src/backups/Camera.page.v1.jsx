@@ -67,7 +67,7 @@ export default function CameraPage() {
   }
 
   return (
-    <div className="w-screen h-screen absolute top-0 left-0 bg-black overflow-hidden">
+    <div className="w-screen h-dvh absolute top-0 left-0 bg-black overflow-hidden">
       <Camera
         ref={camera}
         facingMode={options.facingMode}

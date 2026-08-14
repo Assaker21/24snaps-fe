@@ -1,17 +1,20 @@
 import { ArrowRightIcon } from "lucide-react";
+import { Link } from "react-router";
 
 export default function CallToActionSection() {
   return (
-    <div className="px-4 overflow-hidden flex flex-col md:items-center">
+    <div className="px-4 overflow-hidden flex flex-col md:items-center items-start">
       <h3 className="font-serif text-2xl mb-6 md:text-center">
         Life happens once.
         <br />
         Don't let it fade away.
       </h3>
 
-      <button className="text-sm flex flex-row gap-2 items-center py-3 px-4 bg-blue-300 rounded-2xl">
-        Create your event <ArrowRightIcon size={15} />
-      </button>
+      <Link to="/events/create">
+        <button className="text-md flex flex-row gap-2 items-center py-3 px-4 bg-blue-300 rounded-2xl font-medium text-black">
+          Create your event <ArrowRightIcon size={15} />
+        </button>
+      </Link>
 
       <img
         src="https://framerusercontent.com/images/kIelIN6AxscJt8f3pUY5zYOdo.png?scale-down-to=2048&width=1383&height=2853"

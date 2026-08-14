@@ -8,7 +8,7 @@ import {
 
 export default function UseCasesSection() {
   return (
-    <div className="bg-gray-100 rounded-4xl border border-gray-200 mx-3 items-center flex flex-col">
+    <div className="bg-gray-100 rounded-4xl border border-gray-200 mx-4 items-center flex flex-col">
       <h3 className="text-center text-sm font-medium uppercase tracking-wider my-4 mt-6">
         Use cases
       </h3>
@@ -43,9 +43,12 @@ export default function UseCasesSection() {
             Icon: FishIcon,
             label: "Just everyday",
           },
-        ].map((button) => {
+        ].map((button, index) => {
           return (
-            <button className="bg-gray-200 border rounded-2xl border-gray-300 flex flex-row gap-2 items-center px-3 py-2 text-sm cursor-pointer ">
+            <button
+              key={"Use case: " + index}
+              className="bg-gray-200 border rounded-2xl border-gray-300 flex flex-row gap-2 items-center px-3 py-2 text-sm cursor-pointer "
+            >
               <button.Icon size={15} /> {button.label}
             </button>
           );

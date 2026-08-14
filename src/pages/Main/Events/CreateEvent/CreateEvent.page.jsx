@@ -6,9 +6,28 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Calendar from "./components/Calendar.component";
-import { TimePicker } from "./components/TimePicker.component";
+import {
+  TimePicker,
+  WheelColumn,
+  wheelSizeConfig,
+} from "./components/TimePicker.component";
 import cn from "../../../../utils/cn.util";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import Input from "../../../../components/Input.component";
+import eventsService from "../../../../services/events.service";
+import attachmentsService from "../../../../services/attachments.service";
+import uploadFile from "../../../../utils/upload.util";
+
+const PARTICIPANT_PLANS = [
+  { id: 1, number: 5, price: 0 },
+  { id: 2, number: 10, price: 1.99 },
+  { id: 3, number: 25, price: 4.99 },
+  { id: 4, number: 50, price: 14.99 },
+  { id: 5, number: 100, price: 29.99 },
+  { id: 6, number: 150, price: 49.99 },
+  { id: 7, number: 200, price: 69.99 },
+  { id: 8, number: -1, price: 99.99 },
+];
 
 function equalDates(d1, d2) {
   return (
@@ -21,13 +40,85 @@ function equalDates(d1, d2) {
 export default function CreateEventPage() {
   const [step, setStep] = useState(0);
   const [value, setValue] = useState({
+    name: "",
     endAt: new Date(),
     startAt: new Date(),
     reveal: 2,
+    revealDelayHours: 1,
     planId: 1,
     shotsPerPerson: 24,
     visibility: 1,
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  async function handleCreate() {
+    setSubmitting(true);
+    setError(null);
+
+    const selectedPlan =
+      PARTICIPANT_PLANS.find((p) => p.id == value.planId) ||
+      PARTICIPANT_PLANS[0];
+
+    let revealAt = value.endAt;
+    if (value.reveal == 1) {
+      revealAt = value.startAt;
+    } else if (value.reveal == 3) {
+      revealAt = new Date(
+        value.endAt.getTime() + (value.revealDelayHours || 1) * 3600 * 1000,
+      );
+    }
+
+    const payload = {
+      name: value.name,
+      startAt: value.startAt,
+      endAt: value.endAt,
+      revealAt,
+      maxUsers: selectedPlan.number === -1 ? null : selectedPlan.number,
+      maxAttachmentsPerUser:
+        value.shotsPerPerson === -1 ? null : value.shotsPerPerson,
+      visibilityAll: value.visibility === 1,
+    };
+
+    const response = await eventsService.create(payload);
+
+    if (!response.ok) {
+      setError(response.data?.message || "Something went wrong, try again.");
+      setSubmitting(false);
+      return;
+    }
+
+    const event = response.data;
+
+    if (value.coverFile) {
+      const storageKey = await uploadFile(value.coverFile, value.coverFile.type, {
+        eventId: event.id,
+        type: "PICTURE",
+        isCover: true,
+        fileName: value.coverFile.name,
+      });
+      // Deliberately not tagged with eventId: the cover shouldn't count
+      // against the creator's shot limit or appear in the reveal-gated grid,
+      // it's only linked in via event.mainAttachmentId below.
+      const attachmentResponse = await attachmentsService.create({
+        storageKey,
+        type: "PICTURE",
+      });
+      if (attachmentResponse.ok) {
+        await eventsService.update(event.id, {
+          mainAttachmentId: attachmentResponse.data.id,
+        });
+      }
+    }
+
+    if (event.checkoutUrl) {
+      window.location.href = event.checkoutUrl;
+      return;
+    }
+
+    navigate(`/events/${event.id}`);
+  }
 
   const steps = [
     {
@@ -37,9 +128,8 @@ export default function CreateEventPage() {
       control: ({ value, onChange }) => {
         return (
           <div className="flex flex-col w-full">
-            <input
+            <Input
               autoFocus
-              className="bg-gray-100 border border-gray-200 rounded-xl p-2 px-3 focus:outline-none w-full"
               value={value.name}
               onChange={(e) => {
                 onChange("name", e.target.value);
@@ -59,8 +149,14 @@ export default function CreateEventPage() {
               ].map((suggestion) => {
                 return (
                   <button
+                    key={suggestion}
                     type="button"
-                    className="bg-white border border-gray-200 rounded-2xl p-2 px-3 text-sm"
+                    onClick={() => onChange("name", suggestion)}
+                    className={cn(
+                      "bg-white border border-gray-200 rounded-2xl p-2 px-3 text-sm",
+                      value.name === suggestion &&
+                        "border-black bg-gray-100 text-black font-medium",
+                    )}
                   >
                     {suggestion}
                   </button>
@@ -77,7 +173,7 @@ export default function CreateEventPage() {
         "Guests can capture photos from this time\n until the event closes.",
       control: ({ value, onChange }) => {
         return (
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center w-full">
             <Calendar
               disabled={(d) => new Date(Date.now() - 86400000) > d}
               selected={value.startAt}
@@ -117,10 +213,10 @@ export default function CreateEventPage() {
     {
       title: "When does your event finish?",
       description:
-        "Guests can capturephotos until the film closes\nat your chosen time.",
+        "Guests can capture photos until the film closes\nat your chosen time.",
       control: ({ value, onChange }) => {
         return (
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center w-full">
             <Calendar
               disabled={(d) => new Date(value.startAt - 86400000) > d}
               selected={value.endAt}
@@ -174,6 +270,7 @@ export default function CreateEventPage() {
               ].map((button) => {
                 return (
                   <button
+                    key={button.id}
                     onClick={() => {
                       onChange("reveal", button.id);
                     }}
@@ -191,122 +288,72 @@ export default function CreateEventPage() {
             </div>
 
             {value.reveal == 3 ? (
-              <div className="flex flex-col items-center justify-center mt-8 w-full">
-                <Calendar
-                  disabled={(d) => new Date(value.startAt - 86400000) > d}
-                  selected={value.endAt}
-                  onSelect={(newDate) => {
-                    if (!newDate) return;
-                    const date = new Date(value.endAt);
-                    date.setFullYear(newDate.getFullYear());
-                    date.setMonth(newDate.getMonth());
-                    date.setDate(newDate.getDate());
-                    onChange("endAt", date);
+              <div className="flex flex-col items-center justify-center mt-8 w-full gap-2">
+                <WheelColumn
+                  items={[
+                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+                    18, 19, 20, 21, 22, 23, 24,
+                  ]}
+                  value={(value.revealDelayHours || 1) - 1}
+                  onChange={(newIndex) => {
+                    onChange("revealDelayHours", newIndex + 1);
                   }}
+                  itemHeight={wheelSizeConfig.sm.itemHeight}
+                  visibleItems={5}
+                  className="w-16"
+                  ariaLabel="Select hours delay"
                 />
-                <div className="px-13 w-full">
-                  <div className="flex flex-row justify-between items-center w-full pt-4">
-                    <TimePicker
-                      value={value.endAt}
-                      minTime={
-                        equalDates(value.startAt, value.endAt)
-                          ? value.startAt
-                          : null
-                      }
-                      onChange={(newTime) => {
-                        if (!newTime) return;
-                        const time = new Date(value.endAt);
-                        time.setHours(newTime.getHours());
-                        time.setMinutes(newTime.getMinutes());
-                        time.setSeconds(0);
-                        time.setMilliseconds(0);
-                        onChange("endAt", time);
-                      }}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
+                <p className="text-sm text-gray-500">hours after the event ends</p>
               </div>
             ) : null}
           </div>
         );
       },
     },
-    // {
-    //   title: "Which camera would you like to use?",
-    //   description:
-    //     "Choose a camera that fits your style.\n*Original photos are saved by default.",
-    //   control: ({ value, onChange }) => {
-    //     return (
-    //       <div className="flex flex-col">
-    //         <input
-    //           value={value.name}
-    //           onChange={(e) => {
-    //             onChange("name", e.target.value);
-    //           }}
-    //         />
-
-    //         <p>Suggestions</p>
-    //         <div className="flex flex-col gap-2">
-    //           {[
-    //             "Bloack Head's party",
-    //             "Bloack Head's Birthday",
-    //             "Bloack Head's Wedding day",
-    //             "Our Anniversary",
-    //             "Our Little Party",
-    //           ].map((suggestion) => {
-    //             return;
-    //           })}
-    //         </div>
-    //       </div>
-    //     );
-    //   },
-    // },
-    // {
-    //   title: "Design your film invitation card.",
-    //   description:
-    //     "This cover is the first thing guests see\nwhen they are invited to your film.",
-    //   control: ({ value, onChange }) => {
-    //     return (
-    //       <div className="flex flex-col">
-    //         <input
-    //           value={value.name}
-    //           onChange={(e) => {
-    //             onChange("name", e.target.value);
-    //           }}
-    //         />
-
-    //         <p>Suggestions</p>
-    //         <div className="flex flex-col gap-2">
-    //           {[
-    //             "Bloack Head's party",
-    //             "Bloack Head's Birthday",
-    //             "Bloack Head's Wedding day",
-    //             "Our Anniversary",
-    //             "Our Little Party",
-    //           ].map((suggestion) => {
-    //             return;
-    //           })}
-    //         </div>
-    //       </div>
-    //     );
-    //   },
-    // },
+    {
+      title: "Design your film invitation card.",
+      description:
+        "This cover is the first thing guests see\nwhen they are invited to your film.",
+      control: ({ value, onChange }) => {
+        return (
+          <div className="flex flex-col items-center w-full">
+            <label className="w-full aspect-[3/4] max-w-60 rounded-3xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer">
+              {value.coverPreview ? (
+                <img
+                  src={value.coverPreview}
+                  alt="Cover preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm text-gray-500 px-6 text-center">
+                  Tap to choose a cover photo
+                </span>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  onChange("coverFile", file);
+                  onChange("coverPreview", URL.createObjectURL(file));
+                }}
+              />
+            </label>
+            <p className="text-xs text-gray-400 mt-4 text-center">
+              Optional — you can skip this and add a cover later.
+            </p>
+          </div>
+        );
+      },
+    },
     {
       title: "How many guests for your film?",
       description:
         "Make sure all guests have a chance to take\nthe most amazing photo from your event.",
       control: ({ value, onChange }) => {
-        let plans = [
-          { id: 1, number: 5, price: 0 },
-          { id: 2, number: 10, price: 1.99 },
-          { id: 3, number: 25, price: 4.99 },
-          { id: 4, number: 50, price: 14.99 },
-          { id: 5, number: 100, price: 29.99 },
-          { id: 6, number: 150, price: 49.99 },
-          { id: 7, number: 200, price: 69.99 },
-          { id: 8, number: -1, price: 99.99 },
-        ];
+        let plans = PARTICIPANT_PLANS;
 
         const shotsPerPerson = [5, 10, 16, 24, 36, -1];
 
@@ -349,6 +396,7 @@ export default function CreateEventPage() {
                 {plans.map((plan) => {
                   return (
                     <button
+                      key={plan.id}
                       onClick={() => {
                         onChange("planId", plan.id);
                       }}
@@ -382,6 +430,7 @@ export default function CreateEventPage() {
                 {shotsPerPerson.map((shotsPerPerson) => {
                   return (
                     <button
+                      key={shotsPerPerson}
                       onClick={() => {
                         onChange("shotsPerPerson", shotsPerPerson);
                       }}
@@ -414,6 +463,7 @@ export default function CreateEventPage() {
                 ].map((visibility) => {
                   return (
                     <button
+                      key={visibility.id}
                       onClick={() => {
                         onChange("visibility", visibility.id);
                       }}
@@ -438,16 +488,24 @@ export default function CreateEventPage() {
 
   return (
     <form
-      className="flex flex-col h-screen"
+      className="flex flex-col h-dvh"
       onSubmit={(e) => {
         e.preventDefault();
-        setStep((s) => ++s);
+        if (step >= steps.length - 1) {
+          if (!submitting) handleCreate();
+        } else {
+          setStep((s) => ++s);
+        }
       }}
     >
       <div className="flex flex-row px-2 pt-2">
         <button
           type="button"
           onClick={() => {
+            if (step <= 0) {
+              navigate(-1);
+              return;
+            }
             setStep((s) => --s);
           }}
           className="bg-gray-200 text-gray-800 border border-gray-200 flex flex-row gap-2 size-10 rounded-2xl items-center justify-center "
@@ -489,6 +547,7 @@ export default function CreateEventPage() {
             if (step == index)
               return (
                 <button
+                  key={index}
                   type="button"
                   className="rounded-full size-3 bg-black"
                 />
@@ -496,6 +555,7 @@ export default function CreateEventPage() {
 
             return (
               <button
+                key={index}
                 onClick={() => {
                   setStep(index);
                 }}
@@ -505,11 +565,21 @@ export default function CreateEventPage() {
             );
           })}
         </div>
+        {error ? (
+          <p className="absolute left-2 bottom-16 right-24 text-xs text-red-600">
+            {error}
+          </p>
+        ) : null}
         <button
-          className="absolute right-2 bottom-2 bg-black text-white flex flex-row gap-2 px-3 py-2 rounded-2xl items-center"
+          className="absolute right-2 bottom-2 bg-black text-white flex flex-row gap-2 px-3 py-2 rounded-2xl items-center disabled:opacity-50"
           type="submit"
+          disabled={submitting}
         >
-          {steps.length - 1 == step ? "Submit" : "Next"}
+          {steps.length - 1 == step
+            ? submitting
+              ? "Creating…"
+              : "Create"
+            : "Next"}
           <ArrowRightIcon size={15} />
         </button>
       </div>

@@ -13,7 +13,7 @@ function getMonthNames(locale) {
   );
 }
 
-const sizeConfig = {
+export const wheelSizeConfig = {
   sm: {
     height: ITEM_HEIGHT * VISIBLE_ITEMS * 0.8,
     itemHeight: ITEM_HEIGHT * 0.8,
@@ -99,7 +99,7 @@ function WheelItem({
   );
 }
 
-function WheelColumn({
+export function WheelColumn({
   items,
   value,
   onChange,
@@ -317,7 +317,7 @@ const DatePicker = React.forwardRef(
     },
     ref,
   ) => {
-    const config = sizeConfig[size];
+    const config = wheelSizeConfig[size];
 
     const months = React.useMemo(() => getMonthNames(locale), [locale]);
 
@@ -474,7 +474,7 @@ const TimePicker = React.forwardRef(
     },
     ref,
   ) => {
-    const config = sizeConfig[size];
+    const config = wheelSizeConfig[size];
 
     const hours = React.useMemo(
       () =>

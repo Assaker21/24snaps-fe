@@ -1,22 +1,65 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Camera } from "react-camera-pro";
+import { useNavigate, useParams } from "react-router";
+import { InfinityIcon, CheckIcon } from "lucide-react";
+import eventsService from "../../../services/events.service";
+import attachmentsService from "../../../services/attachments.service";
+import uploadFile from "../../../utils/upload.util";
+import { useAuth } from "../../../contexts/Auth.context";
+
+function dataUrlToBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(",");
+  const contentType = header.match(/data:(.*);base64/)?.[1] || "image/jpeg";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { blob: new Blob([bytes], { type: contentType }), contentType };
+}
 
 export default function CameraPage() {
+  const { eventId } = useParams();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+
   const camera = useRef(null);
   const [image, setImage] = useState(null);
   const [numCameras, setNumCameras] = useState(0);
   const [facingMode, setFacingMode] = useState("environment");
+  const [maxShots, setMaxShots] = useState(undefined);
+  const [takenCount, setTakenCount] = useState(0);
+  const [saving, setSaving] = useState(false);
 
-  // Memoized callback to avoid re-renders
+  useEffect(() => {
+    if (!authLoading) load();
+  }, [eventId, authLoading]);
+
+  async function load() {
+    const eventResponse = await eventsService.getSingle(eventId);
+    if (eventResponse.ok) {
+      setMaxShots(eventResponse.data.maxAttachmentsPerUser);
+    }
+
+    const attachmentsResponse = await attachmentsService.getMultiple({
+      eventId,
+      userId: user.id,
+    });
+    if (attachmentsResponse.ok) {
+      setTakenCount(attachmentsResponse.data.length);
+    }
+  }
+
+  const shotsRemaining =
+    maxShots == null ? Infinity : Math.max(0, maxShots - takenCount);
+
   const handleNumberOfCameras = useCallback((count) => {
     setNumCameras(count);
   }, []);
 
   const handleCapture = useCallback(() => {
-    if (!camera.current) return;
+    if (!camera.current || shotsRemaining <= 0) return;
     const photo = camera.current.takePhoto();
     setImage(photo);
-  }, []);
+  }, [shotsRemaining]);
 
   const handleFlip = useCallback(() => {
     if (!camera.current) return;
@@ -28,8 +71,38 @@ export default function CameraPage() {
     setImage(null);
   }, []);
 
+  async function handleUsePhoto() {
+    if (!image) return;
+    setSaving(true);
+
+    const { blob, contentType } = dataUrlToBlob(image);
+    const storageKey = await uploadFile(blob, contentType, {
+      eventId: Number(eventId),
+      type: "PICTURE",
+    });
+
+    const response = await attachmentsService.create({
+      storageKey,
+      type: "PICTURE",
+      eventId: Number(eventId),
+    });
+
+    setSaving(false);
+    setImage(null);
+
+    if (response.ok) {
+      setTakenCount((c) => c + 1);
+      if (
+        maxShots != null &&
+        Math.max(0, maxShots - (takenCount + 1)) <= 0
+      ) {
+        navigate(`/events/${eventId}`);
+      }
+    }
+  }
+
   return (
-    <div className="w-screen h-screen absolute top-0 left-0 bg-black overflow-hidden">
+    <div className="w-screen h-dvh absolute top-0 left-0 bg-black overflow-hidden">
       {/* Camera viewfinder */}
       {!image && (
         <Camera
@@ -37,6 +110,18 @@ export default function CameraPage() {
           facingMode={facingMode}
           numberOfCamerasCallback={handleNumberOfCameras}
         />
+      )}
+
+      {/* Shots remaining badge */}
+      {!image && (
+        <div className="absolute top-4 left-4 z-10 bg-black/50 text-white text-sm rounded-full px-3 py-1 backdrop-blur-sm flex flex-row items-center gap-1">
+          {shotsRemaining === Infinity ? (
+            <InfinityIcon size={14} />
+          ) : (
+            shotsRemaining
+          )}{" "}
+          shots left
+        </div>
       )}
 
       {/* Bottom controls */}
@@ -69,11 +154,17 @@ export default function CameraPage() {
           </div>
 
           {/* Shutter button (center) */}
-          <button
-            onClick={handleCapture}
-            className="w-20 h-20 bg-white rounded-full active:scale-90 transition-transform duration-75 ease-out shadow-[0_0_0_4px_rgba(255,255,255,0.3)]"
-            aria-label="Take Photo"
-          />
+          {shotsRemaining <= 0 ? (
+            <span className="text-white text-sm bg-black/50 rounded-full px-4 py-2 backdrop-blur-sm">
+              All shots used
+            </span>
+          ) : (
+            <button
+              onClick={handleCapture}
+              className="w-20 h-20 bg-white rounded-full active:scale-90 transition-transform duration-75 ease-out shadow-[0_0_0_4px_rgba(255,255,255,0.3)]"
+              aria-label="Take Photo"
+            />
+          )}
 
           {/* Right spacer to keep shutter centered */}
           <div className="w-16 flex justify-center" />
@@ -91,14 +182,21 @@ export default function CameraPage() {
 
           {/* Preview bottom controls */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/80 to-transparent z-30 flex items-center justify-evenly pb-8">
-            <div className="w-16 flex justify-center" />
             <button
               onClick={handleRetake}
-              className="px-8 py-3 bg-white/20 backdrop-blur-md text-white rounded-full text-sm font-bold border border-white/30 active:scale-90 transition-transform"
+              disabled={saving}
+              className="px-8 py-3 bg-white/20 backdrop-blur-md text-white rounded-full text-sm font-bold border border-white/30 active:scale-90 transition-transform disabled:opacity-50"
             >
               Retake
             </button>
-            <div className="w-16 flex justify-center" />
+            <button
+              onClick={handleUsePhoto}
+              disabled={saving}
+              className="p-4 bg-white text-black rounded-full active:scale-90 transition-transform disabled:opacity-50 flex items-center justify-center"
+              aria-label="Use Photo"
+            >
+              <CheckIcon size={22} />
+            </button>
           </div>
         </>
       )}

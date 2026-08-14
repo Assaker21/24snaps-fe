@@ -93,7 +93,7 @@ export default function Camera() {
   };
 
   return (
-    <div className="w-screen h-screen absolute top-0 left-0 bg-black">
+    <div className="w-screen h-dvh absolute top-0 left-0 bg-black">
       <video
         className="w-full h-full object-cover"
         ref={videoRef}

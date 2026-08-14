@@ -327,7 +327,7 @@ export default function Camera() {
   const backCamsCount = availableCameras.filter(isBackCamera).length;
 
   return (
-    <div className="w-screen h-screen absolute top-0 left-0 bg-black overflow-hidden flex flex-col">
+    <div className="w-screen h-dvh absolute top-0 left-0 bg-black overflow-hidden flex flex-col">
       {/* Viewfinder */}
       <video
         className="w-full h-full object-cover absolute top-0 left-0 transition-transform duration-300"

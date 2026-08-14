@@ -33,7 +33,10 @@ export default function HowItWorksSection() {
           },
         ].map((step, index) => {
           return (
-            <div className="bg-gray-100 rounded-4xl border border-gray-200 items-start flex flex-col px-8">
+            <div
+              key={"How it works: " + index}
+              className="bg-gray-100 rounded-4xl border border-gray-200 items-start flex flex-col px-8"
+            >
               <h3 className="text-sm text-left font-medium uppercase tracking-wider my-4 mt-6 text-gray-500">
                 STEP 0{index + 1}
               </h3>
