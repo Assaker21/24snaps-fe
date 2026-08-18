@@ -9,8 +9,6 @@ import UseCasesSection from "./components/UseCases.section";
 export default function LandingPage() {
   return (
     <div className="w-full overflow-x-hidden">
-      <HeaderSection />
-      <div className="h-10" />
       <MainSection />
       <div className="h-10" />
       <UseCasesSection />

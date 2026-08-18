@@ -34,7 +34,24 @@ export default function ManageEventPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewerAttachment, setViewerAttachment] = useState(null);
+  // The viewer opens on the (already cached) thumb and upgrades to full size once
+  // that finishes loading — see the preloader below.
+  const [viewerSrc, setViewerSrc] = useState(null);
   const [downloading, setDownloading] = useState(false);
+
+  const viewerFullSrc = viewerAttachment
+    ? attachmentsService.getSrc(viewerAttachment, "full")
+    : null;
+
+  function openViewer(attachment) {
+    setViewerAttachment(attachment);
+    setViewerSrc(attachmentsService.getSrc(attachment, "thumb"));
+  }
+
+  function closeViewer() {
+    setViewerAttachment(null);
+    setViewerSrc(null);
+  }
 
   useEffect(() => {
     if (!authLoading) load();
@@ -65,7 +82,9 @@ export default function ManageEventPage() {
   }
 
   async function handleDownload(attachment) {
-    const src = attachmentsService.getDownloadSrc(attachment);
+    // Downloads always take the full size: the untouched original on paid events,
+    // the lightly compressed version otherwise.
+    const src = attachmentsService.getSrc(attachment, "full");
     if (!src) return;
 
     setDownloading(true);
@@ -134,17 +153,14 @@ export default function ManageEventPage() {
   }
 
   const revealed = event.revealAt && new Date(event.revealAt) <= new Date();
+  const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
 
   return (
     <div className="min-h-dvh flex flex-col pb-10">
       <div
         className="w-full h-56 bg-gray-300 bg-cover bg-center flex items-start justify-between p-4 shrink-0"
         style={
-          event.mainAttachment?.downloadUrl
-            ? {
-                backgroundImage: `url(${attachmentsService.getDownloadSrc(event.mainAttachment)})`,
-              }
-            : undefined
+          coverSrc ? { backgroundImage: `url(${coverSrc})` } : undefined
         }
       >
         <button
@@ -212,16 +228,21 @@ export default function ManageEventPage() {
             >
               <button
                 type="button"
-                onClick={() => revealed && setViewerAttachment(attachment)}
+                onClick={() => revealed && openViewer(attachment)}
                 disabled={!revealed}
                 className={cn("w-full h-full block", revealed && "cursor-pointer")}
               >
                 <img
-                  src={attachmentsService.getDownloadSrc(attachment)}
+                  src={attachmentsService.getSrc(
+                    attachment,
+                    revealed ? "thumb" : "blur",
+                  )}
                   alt=""
                   className={cn(
                     "w-full h-full object-cover",
-                    !revealed && "blur-xl scale-110",
+                    // No CSS blur before reveal — the bytes themselves are blurred
+                    // server-side now. scale-110 just hides the soft edges.
+                    !revealed && "scale-110",
                   )}
                 />
               </button>
@@ -251,17 +272,28 @@ export default function ManageEventPage() {
       {viewerAttachment && (
         <div className="fixed inset-0 z-260 bg-black/90 flex flex-col items-center justify-center p-4 gap-6">
           <button
-            onClick={() => setViewerAttachment(null)}
+            onClick={() => closeViewer()}
             className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
             aria-label="Close"
           >
             <XIcon size={20} />
           </button>
           <img
-            src={attachmentsService.getDownloadSrc(viewerAttachment)}
+            src={viewerSrc}
             alt=""
             className="max-w-full max-h-[75vh] object-contain rounded-lg"
           />
+          {/* Preloads the full size off-screen; the visible <img> swaps to it only
+              once it has decoded, so the thumb shows instantly with no flash. */}
+          {viewerFullSrc && viewerFullSrc !== viewerSrc && (
+            <img
+              src={viewerFullSrc}
+              alt=""
+              aria-hidden
+              className="hidden"
+              onLoad={() => setViewerSrc(viewerFullSrc)}
+            />
+          )}
           <Button
             variant="secondary"
             onClick={() => handleDownload(viewerAttachment)}

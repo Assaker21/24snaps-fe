@@ -58,20 +58,7 @@ export default function CreateEventPage() {
   const [guestName, setGuestName] = useState("");
   const navigate = useNavigate();
 
-  // Resolved once, the render where auth finishes loading, and frozen from then on so the
-  // wizard's step count can't shift under the user mid-flow — e.g. once they've entered
-  // their name and it lands on `user`, that shouldn't retroactively remove the step.
-  // (React-documented "adjust state during render" pattern — not an effect, so it commits
-  // in the same render instead of causing an extra flash.)
-  const [needsNameStep, setNeedsNameStep] = useState(null);
-  const [resolvedAuthLoading, setResolvedAuthLoading] = useState(authLoading);
-  if (authLoading !== resolvedAuthLoading) {
-    setResolvedAuthLoading(authLoading);
-    if (!authLoading) {
-      setNeedsNameStep(isGuest && !user?.firstName);
-    }
-  }
-
+  const needsNameStep = isGuest && !user?.firstName;
   const resolvedName = user?.firstName || guestName.trim();
 
   async function handleCreate() {
@@ -113,18 +100,25 @@ export default function CreateEventPage() {
     const event = response.data;
 
     if (value.coverFile) {
-      const storageKey = await uploadFile(value.coverFile, value.coverFile.type, {
-        eventId: event.id,
-        type: "PICTURE",
-        isCover: true,
-        fileName: value.coverFile.name,
-      });
+      const storageKey = await uploadFile(
+        value.coverFile,
+        value.coverFile.type,
+        {
+          eventId: event.id,
+          type: "PICTURE",
+          isCover: true,
+          fileName: value.coverFile.name,
+        },
+      );
       // Deliberately not tagged with eventId: the cover shouldn't count
       // against the creator's shot limit or appear in the reveal-gated grid,
       // it's only linked in via event.mainAttachmentId below.
       const attachmentResponse = await attachmentsService.create({
         storageKey,
         type: "PICTURE",
+        // Tells the backend to generate the single 1600px cover version instead of
+        // the thumb/blur set, and keeps it out of the reveal gate.
+        isCover: true,
       });
       if (attachmentResponse.ok) {
         await eventsService.update(event.id, {
@@ -149,13 +143,7 @@ export default function CreateEventPage() {
         "Our Anniversary",
         "Our Little Party",
       ]
-    : [
-        "Bloack Head's party",
-        "Bloack Head's Birthday",
-        "Bloack Head's Wedding day",
-        "Our Anniversary",
-        "Our Little Party",
-      ];
+    : ["Our Anniversary", "Our Little Party"];
 
   const nameStep = {
     title: "What's your name?",
@@ -350,7 +338,9 @@ export default function CreateEventPage() {
                   className="w-16"
                   ariaLabel="Select hours delay"
                 />
-                <p className="text-sm text-gray-500">hours after the event ends</p>
+                <p className="text-sm text-gray-500">
+                  hours after the event ends
+                </p>
               </div>
             ) : null}
           </div>

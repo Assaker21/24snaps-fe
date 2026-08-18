@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { PlusIcon, ScanLineIcon } from "lucide-react";
 import eventsService from "../../../services/events.service";
@@ -6,13 +6,12 @@ import attachmentsService from "../../../services/attachments.service";
 import Button from "../../../components/Button.component";
 import { formatCountdown } from "../../../utils/countdown.util";
 import { encodeId } from "../../../utils/idCodec.util";
+import useEffectOnce from "../../../hooks/useEffectOnce.hook";
 
 export default function FilmsPage() {
   const [events, setEvents] = useState(null);
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffectOnce(load);
 
   async function load() {
     const response = await eventsService.getMultiple();
@@ -52,33 +51,38 @@ export default function FilmsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {events.map((event) => (
-            <Link
-              key={event.id}
-              to={`/events/${encodeId(event.id)}`}
-              className="flex flex-row items-center gap-3 bg-gray-100 border border-gray-200 rounded-2xl p-3"
-            >
-              <div
-                className="size-14 rounded-xl bg-gray-300 bg-cover bg-center shrink-0"
-                style={
-                  event.mainAttachment?.downloadUrl
-                    ? {
-                        backgroundImage: `url(${attachmentsService.getDownloadSrc(event.mainAttachment)})`,
-                      }
-                    : undefined
-                }
-              />
-              <div className="flex flex-col">
-                <span className="font-serif text-lg leading-tight">
-                  {event.name || "Untitled film"}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {formatCountdown(event.endAt)} · {event.attachments?.length ?? 0}{" "}
-                  moments
-                </span>
-              </div>
-            </Link>
-          ))}
+          {events.map((event) => {
+            const coverSrc = attachmentsService.getSrc(
+              event.mainAttachment,
+              "cover",
+            );
+
+            return (
+              <Link
+                key={event.id}
+                to={`/events/${encodeId(event.id)}`}
+                className="flex flex-row items-center gap-3 bg-gray-100 border border-gray-200 rounded-2xl p-3"
+              >
+                <div
+                  className="size-14 rounded-xl bg-gray-300 bg-cover bg-center shrink-0"
+                  style={
+                    coverSrc
+                      ? { backgroundImage: `url(${coverSrc})` }
+                      : undefined
+                  }
+                />
+                <div className="flex flex-col">
+                  <span className="font-serif text-lg leading-tight">
+                    {event.name || "Untitled film"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatCountdown(event.endAt)} ·{" "}
+                    {event.attachments?.length ?? 0} moments
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

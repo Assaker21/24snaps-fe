@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Camera } from "react-camera-pro";
 import "webrtc-adapter";
+import useEffectOnce from "../../hooks/useEffectOnce.hook";
 
 export default function TestingPage() {
   const [cameras, setCameras] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useEffectOnce(() => {
     const fetchCameras = async () => {
       try {
         // 1. Request global camera permission FIRST.
@@ -81,7 +82,7 @@ export default function TestingPage() {
     };
 
     fetchCameras();
-  }, []);
+  });
 
   if (loading) return <div className="p-4">Scanning hardware...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;

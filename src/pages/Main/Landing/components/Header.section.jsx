@@ -7,13 +7,16 @@ export default function HeaderSection() {
 
   return (
     <div className="w-screen flex flex-row justify-between items-center p-4 bg-white fixed top-0 left-0 z-200 ">
-      <Link to="/" className="font-bold font-serif">
-        24snaps
+      <Link
+        to="/"
+        className="font-bold font-serif flex-row items-center justify-center h-full"
+      >
+        <img src="logo.jpg" className="size-16 -my-4" />
       </Link>
 
       <div className="flex flex-row items-center gap-3">
         <Link to="/films" className="text-sm font-medium">
-          Films
+          Events
         </Link>
 
         {isGuest ? (

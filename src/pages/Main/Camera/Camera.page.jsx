@@ -59,7 +59,7 @@ export default function CameraPage() {
         (max, a) => (!max || a.id > max.id ? a : max),
         null,
       );
-      if (latest) setLastShotSrc(attachmentsService.getDownloadSrc(latest));
+      if (latest) setLastShotSrc(attachmentsService.getSrc(latest, "thumb"));
     }
   }
 
@@ -201,7 +201,7 @@ export default function CameraPage() {
 
     if (response.ok) {
       setTakenCount((c) => c + 1);
-      setLastShotSrc(attachmentsService.getDownloadSrc(response.data));
+      setLastShotSrc(attachmentsService.getSrc(response.data, "thumb"));
       if (
         maxShots != null &&
         Math.max(0, maxShots - (takenCount + 1)) <= 0

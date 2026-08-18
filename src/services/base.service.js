@@ -15,6 +15,7 @@ export default async function baseService(uri, options = {}) {
 
   const configHeaders = {
     "Content-Type": "application/json",
+    "device-id": localStorage.getItem("deviceId"),
     ...headers,
   };
 

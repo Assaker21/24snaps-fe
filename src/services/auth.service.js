@@ -15,6 +15,14 @@ async function me() {
   });
 }
 
+async function checkEmail(email) {
+  return await baseService("/auth/check-email", {
+    method: "POST",
+    requiresAuth: false,
+    body: { email },
+  });
+}
+
 async function deviceLogin(virtualId) {
   return await baseService("/auth/device", {
     method: "POST",
@@ -23,4 +31,4 @@ async function deviceLogin(virtualId) {
   });
 }
 
-export default { login, me, deviceLogin };
+export default { login, checkEmail, me, deviceLogin };

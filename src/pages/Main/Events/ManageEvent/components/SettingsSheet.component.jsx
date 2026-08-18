@@ -67,6 +67,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
     const attachmentResponse = await attachmentsService.create({
       storageKey,
       type: "PICTURE",
+      isCover: true,
     });
     if (attachmentResponse.ok) {
       await eventsService.update(event.id, {
