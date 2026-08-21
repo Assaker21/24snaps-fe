@@ -27,7 +27,7 @@ export default async function uploadFile(
   if (response.ok && response.data) {
     const { uploadUrl, key } = response.data;
 
-    await fetch(uploadUrl, {
+    const put = await fetch(uploadUrl, {
       method: "PUT",
       // Must match the headers the backend signed into the presigned URL
       // (storage.js's PutObjectCommand sets ContentType + IfNoneMatch) —
@@ -35,6 +35,12 @@ export default async function uploadFile(
       headers: { "Content-Type": contentType, "If-None-Match": "*" },
       body: blob,
     });
+
+    // A rejected PUT still yields a resolved promise, so without this an expired
+    // signature or a dropped connection would happily return a key pointing at nothing.
+    if (!put.ok) {
+      throw new Error(`Upload rejected by storage (${put.status})`);
+    }
 
     return key;
   }

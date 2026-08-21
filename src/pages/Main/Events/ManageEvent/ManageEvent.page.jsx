@@ -3,14 +3,17 @@ import { useNavigate, useParams, Link } from "react-router";
 import {
   ArrowLeftIcon,
   CameraIcon,
+  ClockIcon,
   DownloadIcon,
   QrCodeIcon,
   SettingsIcon,
+  UserRoundIcon,
   XIcon,
 } from "lucide-react";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import Button from "../../../../components/Button.component";
+import IconButton from "../../../../components/IconButton.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import cn from "../../../../utils/cn.util";
@@ -117,9 +120,14 @@ export default function ManageEventPage() {
     }
   }, [event, user, isCreator, isParticipant, eventId, navigate]);
 
-  if (authLoading || loading || !user || (event && !isCreator && !isParticipant)) {
+  if (
+    authLoading ||
+    loading ||
+    !user ||
+    (event && !isCreator && !isParticipant)
+  ) {
     return (
-      <div className="min-h-dvh flex items-center justify-center text-sm text-gray-500">
+      <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
         Loading…
       </div>
     );
@@ -127,12 +135,13 @@ export default function ManageEventPage() {
 
   if (!event) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-sm text-gray-500">
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <h1 className="font-serif text-3xl">Nothing here</h1>
+        <p className="text-sm text-muted-foreground">
           This film doesn't exist or was deleted.
         </p>
         <Link to="/films">
-          <Button variant="secondary">Back to films</Button>
+          <Button variant="primary">Back to films</Button>
         </Link>
       </div>
     );
@@ -140,9 +149,9 @@ export default function ManageEventPage() {
 
   if (isCreator && !event.paidAt) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="font-serif text-2xl">Almost there</h1>
-        <p className="text-sm text-gray-500">
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <h1 className="font-serif text-3xl">Almost there</h1>
+        <p className="text-sm text-muted-foreground">
           Complete payment to activate "{event.name}".
         </p>
         <Button variant="primary" onClick={handleCheckoutRetry}>
@@ -154,44 +163,93 @@ export default function ManageEventPage() {
 
   const revealed = event.revealAt && new Date(event.revealAt) <= new Date();
   const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
+  const ended = event.endAt && new Date(event.endAt) <= new Date();
+
+  const stats = [
+    { value: attachments.length, label: "Moments" },
+    { value: ended ? "Ended" : "Live", label: "Status" },
+    { value: event.participants?.length ?? 0, label: "People" },
+  ];
 
   return (
-    <div className="min-h-dvh flex flex-col pb-10">
+    <div className="min-h-dvh flex flex-col bg-background pb-12">
+      {/* Cover hero. The title and stats sit on the photo itself, so they keep the
+          reference's white-on-image treatment even in the light theme. */}
       <div
-        className="w-full h-56 bg-gray-300 bg-cover bg-center flex items-start justify-between p-4 shrink-0"
-        style={
-          coverSrc ? { backgroundImage: `url(${coverSrc})` } : undefined
-        }
-      >
-        <button
-          onClick={() => navigate("/films")}
-          className="bg-black/40 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
-        >
-          <ArrowLeftIcon size={18} />
-        </button>
-        {isCreator && (
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="bg-black/40 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
-          >
-            <SettingsIcon size={18} />
-          </button>
+        className={cn(
+          "relative w-full bg-surface-strong bg-cover bg-center shrink-0",
+          coverSrc ? "min-h-[26rem]" : "min-h-[18rem]",
         )}
+        style={coverSrc ? { backgroundImage: `url(${coverSrc})` } : undefined}
+      >
+        {coverSrc ? (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25" />
+        ) : null}
+
+        <div className="relative flex flex-row items-start justify-between p-4">
+          <IconButton
+            variant={coverSrc ? "overlay" : "surface"}
+            onClick={() => navigate("/films")}
+            aria-label="Back to films"
+          >
+            <ArrowLeftIcon size={18} />
+          </IconButton>
+          {isCreator && (
+            <IconButton
+              variant={coverSrc ? "overlay" : "surface"}
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Film settings"
+            >
+              <SettingsIcon size={18} />
+            </IconButton>
+          )}
+        </div>
+
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 px-5 pb-6 flex flex-col items-center text-center",
+            coverSrc ? "text-white" : "text-foreground",
+          )}
+        >
+          <h1 className="font-serif text-4xl">{event.name}</h1>
+
+          <div className="flex flex-row items-start justify-between w-full max-w-sm mt-5">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center flex-1">
+                <span className="font-serif italic text-2xl">{stat.value}</span>
+                <span
+                  className={cn(
+                    "text-xs mt-0.5",
+                    coverSrc ? "text-white/75" : "text-muted-foreground",
+                  )}
+                >
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="px-4 pt-4">
-        <h1 className="font-serif text-2xl">{event.name}</h1>
-        <p className="text-sm text-gray-500">
-          {formatCountdown(event.endAt)} · {event.participants?.length ?? 0}{" "}
-          people
-        </p>
+      <div className="px-4 pt-5">
+        <div className="flex flex-row items-center gap-4 text-sm text-muted-foreground">
+          <span className="flex flex-row items-center gap-1.5">
+            <ClockIcon size={14} />
+            {formatCountdown(event.endAt) || "Ended"}
+          </span>
+          <span className="flex flex-row items-center gap-1.5">
+            <UserRoundIcon size={14} />
+            {event.participants?.length ?? 0} joined
+          </span>
+        </div>
 
         <div className="flex flex-row gap-2 mt-4">
           <Button
             variant="secondary"
+            size="sm"
             disabled
             title="Coming soon"
-            className="flex-1 justify-center opacity-50 cursor-not-allowed"
+            className="justify-center"
           >
             <DownloadIcon size={16} />
             Export
@@ -199,15 +257,16 @@ export default function ManageEventPage() {
           {isCreator && (
             <Button
               variant="secondary"
+              size="sm"
               onClick={() => setInviteOpen(true)}
-              className="flex-1 justify-center"
+              className="justify-center"
             >
               <QrCodeIcon size={16} />
               Invite
             </Button>
           )}
           <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
-            <Button variant="primary" className="w-full justify-center">
+            <Button variant="primary" size="sm" className="w-full justify-center">
               <CameraIcon size={16} />
               Camera
             </Button>
@@ -215,22 +274,46 @@ export default function ManageEventPage() {
         </div>
       </div>
 
+      <div className="border-t border-border mx-4 mt-6" />
+
+      {/* One banner for the whole grid rather than a pill per tile — the tiles
+          themselves are already unrecoverably blurred server-side. */}
+      {!revealed && attachments.length > 0 ? (
+        <div className="flex justify-center mt-5">
+          <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
+            <ClockIcon size={13} />
+            Reveals on{" "}
+            {event.revealAt
+              ? new Date(event.revealAt).toLocaleString([], {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "soon"}
+          </span>
+        </div>
+      ) : null}
+
       {attachments.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center mt-10">
+        <p className="text-sm text-subtle text-center mt-12">
           No moments captured yet.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-2 px-4 mt-6">
+        <div className="grid grid-cols-2 gap-2.5 px-4 mt-5">
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="relative aspect-square rounded-2xl overflow-hidden bg-gray-200"
+              className="relative aspect-square rounded-2xl overflow-hidden bg-surface"
             >
               <button
                 type="button"
                 onClick={() => revealed && openViewer(attachment)}
                 disabled={!revealed}
-                className={cn("w-full h-full block", revealed && "cursor-pointer")}
+                className={cn(
+                  "w-full h-full block",
+                  revealed && "cursor-pointer",
+                )}
               >
                 <img
                   src={attachmentsService.getSrc(
@@ -246,16 +329,14 @@ export default function ManageEventPage() {
                   )}
                 />
               </button>
-              {!revealed && (
-                <div className="absolute inset-0 flex items-center justify-center px-2">
-                  <span className="bg-black/50 text-white text-xs rounded-full px-3 py-1 text-center">
-                    Reveals{" "}
-                    {event.revealAt
-                      ? new Date(event.revealAt).toLocaleString()
-                      : "soon"}
-                  </span>
-                </div>
-              )}
+
+              {revealed ? (
+                <span className="absolute bottom-2.5 left-3 font-serif italic text-white text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] pointer-events-none">
+                  {attachment.userId === user.id
+                    ? "You"
+                    : attachment.user?.firstName || ""}
+                </span>
+              ) : null}
             </div>
           ))}
         </div>
@@ -270,18 +351,19 @@ export default function ManageEventPage() {
       />
 
       {viewerAttachment && (
-        <div className="fixed inset-0 z-260 bg-black/90 flex flex-col items-center justify-center p-4 gap-6">
-          <button
-            onClick={() => closeViewer()}
-            className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
+        <div className="fixed inset-0 z-260 bg-black/92 flex flex-col items-center justify-center p-4 gap-6">
+          <IconButton
+            variant="overlay"
+            onClick={closeViewer}
+            className="absolute top-4 right-4"
             aria-label="Close"
           >
             <XIcon size={20} />
-          </button>
+          </IconButton>
           <img
             src={viewerSrc}
             alt=""
-            className="max-w-full max-h-[75vh] object-contain rounded-lg"
+            className="max-w-full max-h-[75vh] object-contain rounded-2xl"
           />
           {/* Preloads the full size off-screen; the visible <img> swaps to it only
               once it has decoded, so the thumb shows instantly with no flash. */}
@@ -295,9 +377,10 @@ export default function ManageEventPage() {
             />
           )}
           <Button
-            variant="secondary"
+            variant="primary"
             onClick={() => handleDownload(viewerAttachment)}
             disabled={downloading}
+            className="bg-white text-foreground"
           >
             <DownloadIcon size={16} />
             {downloading ? "Downloading…" : "Download"}

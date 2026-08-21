@@ -1,12 +1,8 @@
 import { Outlet } from "react-router";
-import HeaderSection from "../pages/Main/Landing/components/Header.section";
 
+// Deliberately chrome-free: every screen in the design reference carries its own
+// header (a back chip, a cover hero, or the Films top bar), so a shared fixed
+// header would sit on top of them.
 export default function MainLayout() {
-  return (
-    <>
-      <HeaderSection />
-      <div className="h-10" />
-      <Outlet />
-    </>
-  );
+  return <Outlet />;
 }

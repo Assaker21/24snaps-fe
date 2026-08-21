@@ -5,15 +5,22 @@ import {
   MicIcon,
   PlaneIcon,
 } from "lucide-react";
+import SectionLabel from "../../../../components/SectionLabel.component";
+
+const USE_CASES = [
+  { Icon: HeartIcon, label: "Wedding" },
+  { Icon: CakeIcon, label: "Birthday" },
+  { Icon: PlaneIcon, label: "Trip" },
+  { Icon: MicIcon, label: "Party" },
+  { Icon: FishIcon, label: "Just everyday" },
+];
 
 export default function UseCasesSection() {
   return (
-    <div className="bg-gray-100 rounded-4xl border border-gray-200 mx-4 items-center flex flex-col">
-      <h3 className="text-center text-sm font-medium uppercase tracking-wider my-4 mt-6">
-        Use cases
-      </h3>
+    <div className="bg-surface rounded-3xl mx-4 items-center flex flex-col pt-8 overflow-hidden">
+      <SectionLabel className="text-center">Use cases</SectionLabel>
 
-      <p className="font-serif text-2xl text-center mb-8">
+      <p className="font-serif text-3xl text-center mt-4 mb-8 px-6">
         “Your guests
         <br />
         captured moments
@@ -22,42 +29,20 @@ export default function UseCasesSection() {
       </p>
 
       <div className="flex flex-row flex-wrap gap-2 justify-center px-5 mb-8">
-        {[
-          {
-            Icon: HeartIcon,
-            label: "Wedding",
-          },
-          {
-            Icon: CakeIcon,
-            label: "Birthday",
-          },
-          {
-            Icon: PlaneIcon,
-            label: "Trip",
-          },
-          {
-            Icon: MicIcon,
-            label: "Party",
-          },
-          {
-            Icon: FishIcon,
-            label: "Just everyday",
-          },
-        ].map((button, index) => {
-          return (
-            <button
-              key={"Use case: " + index}
-              className="bg-gray-200 border rounded-2xl border-gray-300 flex flex-row gap-2 items-center px-3 py-2 text-sm cursor-pointer "
-            >
-              <button.Icon size={15} /> {button.label}
-            </button>
-          );
-        })}
+        {USE_CASES.map(({ Icon, label }) => (
+          <span
+            key={label}
+            className="bg-background rounded-full flex flex-row gap-2 items-center px-4 py-2 text-sm"
+          >
+            <Icon size={15} /> {label}
+          </span>
+        ))}
       </div>
 
       <img
         src="https://framerusercontent.com/images/yE5qTYqfi86r0Wy4jK6SdnWI.png?scale-down-to=2048&width=2694&height=2888"
-        className="w-[calc(100%-20px)] py-3 max-w-200"
+        alt=""
+        className="w-[calc(100%-20px)] max-w-200"
       />
     </div>
   );

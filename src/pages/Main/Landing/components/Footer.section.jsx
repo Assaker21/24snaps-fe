@@ -1,11 +1,13 @@
 export default function FooterSection() {
   return (
-    <div className="bg-gray-100 border-t border-gray-200 p-4 pt-3">
-      <h3 className="font-serif text-xl pb-4">
+    <div className="bg-surface mt-16 px-5 py-10">
+      <h3 className="font-serif text-2xl max-w-md">
         A single day becomes timeless, when remembered together.
       </h3>
 
-      <div className="h-px w-full bg-gray-200" />
+      <p className="text-xs text-subtle mt-8">
+        © {new Date().getFullYear()} 24snaps
+      </p>
     </div>
   );
 }

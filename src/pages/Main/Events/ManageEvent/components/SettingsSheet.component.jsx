@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Drawer } from "vaul";
 import {
+  ApertureIcon,
+  CalendarIcon,
   ChevronRightIcon,
   ClockIcon,
+  ImagePlusIcon,
   PencilIcon,
   TrashIcon,
   UnlockIcon,
   UserIcon,
-  XIcon,
 } from "lucide-react";
 import Button from "../../../../../components/Button.component";
 import Input from "../../../../../components/Input.component";
+import Sheet from "../../../../../components/Sheet.component";
+import Toggle from "../../../../../components/Toggle.component";
 import eventsService from "../../../../../services/events.service";
 import uploadFile from "../../../../../utils/upload.util";
 import attachmentsService from "../../../../../services/attachments.service";
@@ -19,25 +22,28 @@ import cn from "../../../../../utils/cn.util";
 import Calendar from "../../CreateEvent/components/Calendar.component";
 import { TimePicker } from "../../CreateEvent/components/TimePicker.component";
 
-function Row({ icon, label, value, onClick, danger }) {
+// One settings line: icon + label on the left, current value on the right, and a
+// chevron only when the row actually opens something.
+function Row({ icon, label, value, onClick }) {
+  const Element = onClick ? "button" : "div";
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Element
+      {...(onClick ? { type: "button", onClick } : {})}
       className={cn(
-        "flex flex-row items-center justify-between w-full bg-gray-100 rounded-2xl p-4 text-left",
-        danger && "bg-red-50 text-red-600",
+        "flex flex-row items-center justify-between gap-3 w-full bg-surface rounded-2xl px-4 py-4 text-left",
+        onClick && "cursor-pointer transition-colors hover:bg-surface-strong",
       )}
     >
-      <span className="flex flex-row items-center gap-3 text-sm font-medium">
+      <span className="flex flex-row items-center gap-3 text-[0.95rem] font-medium shrink-0">
         {icon}
         {label}
       </span>
-      <span className="flex flex-row items-center gap-1 text-sm text-gray-500">
-        {value}
-        {onClick ? <ChevronRightIcon size={16} /> : null}
+      <span className="flex flex-row items-center gap-1.5 text-sm text-muted-foreground min-w-0">
+        <span className="truncate">{value}</span>
+        {onClick ? <ChevronRightIcon size={16} className="shrink-0" /> : null}
       </span>
-    </button>
+    </Element>
   );
 }
 
@@ -85,197 +91,164 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
     navigate("/films");
   }
 
+  const formatMoment = (date) =>
+    date
+      ? new Date(date).toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "Not set";
+
   return (
-    <Drawer.Root open={open} onOpenChange={setOpen}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-251" />
-        <Drawer.Content className="z-251 bg-white flex flex-col fixed bottom-0 left-0 right-0 max-h-[85vh] rounded-t-[10px]">
-          <div className="max-w-md w-full mx-auto overflow-auto p-4 rounded-t-[10px]">
-            <Drawer.Handle />
-
-            <div className="flex flex-row items-start justify-between pt-4 mb-4">
-              <Drawer.Title className="text-xl font-bold font-serif flex-1 leading-tight tracking-tight">
-                Film Settings
-              </Drawer.Title>
-              <Drawer.Close asChild>
-                <Button
-                  variant="secondary"
-                  className="rounded-full aspect-square p-3"
-                >
-                  <XIcon className="size-6 p-0" />
-                </Button>
-              </Drawer.Close>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Row
-                icon={<PencilIcon size={16} />}
-                label="Name & Cover"
-                value={event.name}
-                onClick={() =>
-                  setEditing(editing === "name" ? null : "name")
-                }
-              />
-              {editing === "name" && (
-                <div className="flex flex-col gap-2 px-1 pb-2">
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                  <div className="flex flex-row gap-2">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      className="text-sm"
-                      onClick={() => saveField({ name })}
-                    >
-                      Save name
-                    </Button>
-                    <label
-                      className={cn(
-                        "text-sm flex flex-row gap-2 items-center py-3 px-4 rounded-2xl font-medium text-black bg-white shadow-sm border border-gray-200 cursor-pointer",
-                        savingCover && "opacity-50 pointer-events-none",
-                      )}
-                    >
-                      {savingCover ? "Uploading…" : "Change cover"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleCoverChange}
-                      />
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              <Row
-                icon={<ClockIcon size={16} />}
-                label="Ending date"
-                value={
-                  event.endAt
-                    ? new Date(event.endAt).toLocaleString()
-                    : "Not set"
-                }
-                onClick={() =>
-                  setEditing(editing === "endAt" ? null : "endAt")
-                }
-              />
-              {editing === "endAt" && (
-                <div className="flex flex-col items-center gap-2 px-1 pb-2">
-                  <Calendar
-                    selected={new Date(event.endAt)}
-                    onSelect={(date) => {
-                      if (!date) return;
-                      const current = new Date(event.endAt);
-                      current.setFullYear(date.getFullYear());
-                      current.setMonth(date.getMonth());
-                      current.setDate(date.getDate());
-                      saveField({ endAt: current });
-                    }}
-                  />
-                  <TimePicker
-                    value={new Date(event.endAt)}
-                    onChange={(time) => {
-                      if (!time) return;
-                      const current = new Date(event.endAt);
-                      current.setHours(time.getHours());
-                      current.setMinutes(time.getMinutes());
-                      saveField({ endAt: current });
-                    }}
-                  />
-                </div>
-              )}
-
-              <Row
-                icon={<ClockIcon size={16} />}
-                label="Reveal time"
-                value={
-                  event.revealAt
-                    ? new Date(event.revealAt).toLocaleString()
-                    : "Not set"
-                }
-                onClick={() =>
-                  setEditing(editing === "revealAt" ? null : "revealAt")
-                }
-              />
-              {editing === "revealAt" && (
-                <div className="flex flex-col items-center gap-2 px-1 pb-2">
-                  <Calendar
-                    selected={new Date(event.revealAt || event.endAt)}
-                    onSelect={(date) => {
-                      if (!date) return;
-                      const current = new Date(event.revealAt || event.endAt);
-                      current.setFullYear(date.getFullYear());
-                      current.setMonth(date.getMonth());
-                      current.setDate(date.getDate());
-                      saveField({ revealAt: current });
-                    }}
-                  />
-                  <TimePicker
-                    value={new Date(event.revealAt || event.endAt)}
-                    onChange={(time) => {
-                      if (!time) return;
-                      const current = new Date(event.revealAt || event.endAt);
-                      current.setHours(time.getHours());
-                      current.setMinutes(time.getMinutes());
-                      saveField({ revealAt: current });
-                    }}
-                  />
-                </div>
-              )}
-
-              <Row
-                icon={<UserIcon size={16} />}
-                label="Participants"
-                value={
-                  event.maxUsers ? `Up to ${event.maxUsers}` : "Unlimited"
-                }
-              />
-
-              <Row
-                icon={<UserIcon size={16} />}
-                label="Shots per person"
-                value={event.maxAttachmentsPerUser ?? "Unlimited"}
-              />
-
-              <Row
-                icon={<UnlockIcon size={16} />}
-                label="Everyone can see all photos"
-                value={
-                  <div
-                    role="switch"
-                    aria-checked={event.visibilityAll}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      saveField({ visibilityAll: !event.visibilityAll });
-                    }}
-                    className={cn(
-                      "w-10 h-6 rounded-full flex items-center px-0.5 cursor-pointer transition-colors",
-                      event.visibilityAll ? "bg-green-500" : "bg-gray-300",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "size-5 rounded-full bg-white transition-transform",
-                        event.visibilityAll && "translate-x-4",
-                      )}
-                    />
-                  </div>
-                }
-              />
-
-              <Row
-                icon={<TrashIcon size={16} />}
-                label={deleting ? "Deleting…" : "Delete"}
-                value=""
-                danger
-                onClick={deleting ? undefined : handleDelete}
-              />
+    <Sheet open={open} setOpen={setOpen} title="Film Settings">
+      <div className="flex flex-col gap-2.5 mt-7">
+        <Row
+          icon={<PencilIcon size={16} />}
+          label="Name & Cover"
+          value={event.name}
+          onClick={() => setEditing(editing === "name" ? null : "name")}
+        />
+        {editing === "name" && (
+          <div className="flex flex-col gap-2.5 pb-2">
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="flex flex-row gap-2.5">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => saveField({ name })}
+              >
+                Save name
+              </Button>
+              <label
+                className={cn(
+                  "flex flex-row items-center gap-2 text-sm font-medium cursor-pointer",
+                  "bg-surface text-foreground rounded-full py-2 px-3.5",
+                  "transition-transform duration-200 active:scale-95",
+                  savingCover && "opacity-45 pointer-events-none",
+                )}
+              >
+                <ImagePlusIcon size={16} />
+                {savingCover ? "Uploading…" : "Change cover"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverChange}
+                />
+              </label>
             </div>
           </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+        )}
+
+        <Row
+          icon={<CalendarIcon size={16} />}
+          label="Ending date"
+          value={formatMoment(event.endAt)}
+          onClick={() => setEditing(editing === "endAt" ? null : "endAt")}
+        />
+        {editing === "endAt" && (
+          <div className="flex flex-col items-center gap-2 pb-2">
+            <Calendar
+              selected={new Date(event.endAt)}
+              onSelect={(date) => {
+                if (!date) return;
+                const current = new Date(event.endAt);
+                current.setFullYear(date.getFullYear());
+                current.setMonth(date.getMonth());
+                current.setDate(date.getDate());
+                saveField({ endAt: current });
+              }}
+            />
+            <TimePicker
+              value={new Date(event.endAt)}
+              onChange={(time) => {
+                if (!time) return;
+                const current = new Date(event.endAt);
+                current.setHours(time.getHours());
+                current.setMinutes(time.getMinutes());
+                saveField({ endAt: current });
+              }}
+            />
+          </div>
+        )}
+
+        <Row
+          icon={<ClockIcon size={16} />}
+          label="Reveal time"
+          value={formatMoment(event.revealAt)}
+          onClick={() => setEditing(editing === "revealAt" ? null : "revealAt")}
+        />
+        {editing === "revealAt" && (
+          <div className="flex flex-col items-center gap-2 pb-2">
+            <Calendar
+              selected={new Date(event.revealAt || event.endAt)}
+              onSelect={(date) => {
+                if (!date) return;
+                const current = new Date(event.revealAt || event.endAt);
+                current.setFullYear(date.getFullYear());
+                current.setMonth(date.getMonth());
+                current.setDate(date.getDate());
+                saveField({ revealAt: current });
+              }}
+            />
+            <TimePicker
+              value={new Date(event.revealAt || event.endAt)}
+              onChange={(time) => {
+                if (!time) return;
+                const current = new Date(event.revealAt || event.endAt);
+                current.setHours(time.getHours());
+                current.setMinutes(time.getMinutes());
+                saveField({ revealAt: current });
+              }}
+            />
+          </div>
+        )}
+
+        <Row
+          icon={<UserIcon size={16} />}
+          label="Participants"
+          value={
+            event.maxUsers ? `Up to ${event.maxUsers} participants` : "Unlimited"
+          }
+        />
+
+        <Row
+          icon={<ApertureIcon size={16} />}
+          label="Shots per person"
+          value={event.maxAttachmentsPerUser ?? "Unlimited"}
+        />
+
+        <div className="flex flex-row items-center justify-between gap-3 w-full bg-surface rounded-2xl px-4 py-4">
+          <span className="flex flex-row items-center gap-3 text-[0.95rem] font-medium">
+            <UnlockIcon size={16} />
+            Everyone can see all photos
+          </span>
+          <Toggle
+            checked={!!event.visibilityAll}
+            onChange={(next) => saveField({ visibilityAll: next })}
+            label="Everyone can see all photos"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={deleting ? undefined : handleDelete}
+          className={cn(
+            "flex flex-row items-center justify-center gap-2 w-full mt-4",
+            "bg-danger-soft border border-danger/15 text-danger",
+            "rounded-2xl px-4 py-4 text-[0.95rem] font-medium cursor-pointer",
+            "transition-[transform,filter] duration-200 active:scale-[0.98]",
+            deleting && "opacity-45 pointer-events-none",
+          )}
+        >
+          <TrashIcon size={16} />
+          {deleting ? "Deleting…" : "Delete"}
+        </button>
+      </div>
+    </Sheet>
   );
 }
