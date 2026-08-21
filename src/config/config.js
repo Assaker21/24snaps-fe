@@ -1,1 +1,1 @@
-export const DEVELOPMENT = true;
+export const DEVELOPMENT = false;
