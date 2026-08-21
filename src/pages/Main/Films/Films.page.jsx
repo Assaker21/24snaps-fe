@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import {
-  CircleUserRoundIcon,
-  DiscIcon,
-  FilmIcon,
-  PlusIcon,
-  ScanLineIcon,
-} from "lucide-react";
+import { CircleUserRoundIcon, PlusIcon } from "lucide-react";
 import eventsService from "../../../services/events.service";
 import attachmentsService from "../../../services/attachments.service";
 import Button from "../../../components/Button.component";
@@ -69,8 +63,8 @@ export default function FilmsPage() {
   const albums = films?.albums ?? [];
 
   return (
-    <div className="w-full min-h-dvh flex flex-col pb-24">
-      {/* Top bar: wordmark left, join + new right — as in the reference. */}
+    <div className="w-full min-h-dvh flex flex-col pb-10">
+      {/* Top bar: wordmark left, new film + account right. */}
       <div className="flex flex-row items-center justify-between px-4 py-3 sticky top-0 bg-background z-10">
         <Link to="/" aria-label="24snaps home">
           <img
@@ -81,16 +75,28 @@ export default function FilmsPage() {
         </Link>
 
         <div className="flex flex-row items-center gap-2">
-          <Button variant="secondary" size="sm">
-            <ScanLineIcon size={16} />
-            Join
-          </Button>
           <Link to="/events/create">
             <Button variant="primary" size="sm">
               <PlusIcon size={16} />
               New
             </Button>
           </Link>
+
+          {/* The only way into the account now that the tab bar is gone. Signed-in
+              users get their name; guests get the prompt to sign in. */}
+          <button
+            type="button"
+            onClick={() => isGuest && setOpen(true)}
+            aria-label={isGuest ? "Sign in" : "Account"}
+            className={cn(
+              "flex flex-row items-center gap-1.5 text-sm cursor-pointer",
+              "rounded-full pl-2 pr-3 py-1.5 transition-colors hover:bg-surface",
+              isGuest ? "text-muted-foreground" : "text-foreground",
+            )}
+          >
+            <CircleUserRoundIcon size={22} />
+            {!isGuest && user?.firstName ? user.firstName : null}
+          </button>
         </div>
       </div>
 
@@ -131,36 +137,6 @@ export default function FilmsPage() {
           </div>
         </div>
       ) : null}
-
-      {/* Bottom tab bar. Tapes isn't built yet, so it reads as a disabled peer
-          rather than a link that goes nowhere. */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-6 py-3 flex flex-row items-center justify-between">
-        <div className="flex flex-row items-center gap-7">
-          <span className="flex flex-row items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em]">
-            <FilmIcon size={18} />
-            Films
-          </span>
-          <span
-            className="flex flex-row items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-subtle"
-            title="Coming soon"
-          >
-            <DiscIcon size={18} />
-            Tapes
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => isGuest && setOpen(true)}
-          className={cn(
-            "flex flex-row items-center gap-2 text-sm cursor-pointer",
-            isGuest ? "text-muted-foreground" : "text-foreground",
-          )}
-        >
-          <CircleUserRoundIcon size={22} />
-          {!isGuest && user?.firstName ? user.firstName : null}
-        </button>
-      </nav>
     </div>
   );
 }
