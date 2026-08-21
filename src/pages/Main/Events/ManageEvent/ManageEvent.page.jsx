@@ -8,12 +8,13 @@ import {
   QrCodeIcon,
   SettingsIcon,
   UserRoundIcon,
-  XIcon,
 } from "lucide-react";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import Button from "../../../../components/Button.component";
 import IconButton from "../../../../components/IconButton.component";
+import PhotoGrid from "../../../../components/PhotoGrid.component";
+import PhotoViewer from "../../../../components/PhotoViewer.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import cn from "../../../../utils/cn.util";
@@ -21,57 +22,29 @@ import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
 
-function extensionFromContentType(contentType) {
-  return (contentType?.split("/")[1] || "jpg").split("+")[0];
-}
-
 export default function ManageEventPage() {
   const { eventId: encodedEventId } = useParams();
   const eventId = decodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
-  const [event, setEvent] = useState(null);
-  const [attachments, setAttachments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Coming back from the camera, the previous payload is still in hand — paint it now
+  // and let load() refresh underneath rather than blanking the screen.
+  const [event, setEvent] = useState(() => eventsService.getCached(eventId));
+  const [loading, setLoading] = useState(!event);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [viewerAttachment, setViewerAttachment] = useState(null);
-  // The viewer opens on the (already cached) thumb and upgrades to full size once
-  // that finishes loading — see the preloader below.
-  const [viewerSrc, setViewerSrc] = useState(null);
-  const [downloading, setDownloading] = useState(false);
-
-  const viewerFullSrc = viewerAttachment
-    ? attachmentsService.getSrc(viewerAttachment, "full")
-    : null;
-
-  function openViewer(attachment) {
-    setViewerAttachment(attachment);
-    setViewerSrc(attachmentsService.getSrc(attachment, "thumb"));
-  }
-
-  function closeViewer() {
-    setViewerAttachment(null);
-    setViewerSrc(null);
-  }
+  const [viewerIndex, setViewerIndex] = useState(null);
 
   useEffect(() => {
     if (!authLoading) load();
   }, [eventId, authLoading]);
 
+  // One request for the whole screen: the event payload already carries its
+  // attachments, scoped and gated, with presigned URLs on each.
   async function load() {
-    setLoading(true);
     const response = await eventsService.getSingle(eventId);
-    if (response.ok) {
-      setEvent(response.data);
-      const attachmentsResponse = await attachmentsService.getMultiple({
-        eventId,
-      });
-      if (attachmentsResponse.ok) setAttachments(attachmentsResponse.data);
-    } else {
-      setEvent(null);
-    }
+    setEvent(response.ok ? response.data : null);
     setLoading(false);
   }
 
@@ -81,30 +54,6 @@ export default function ManageEventPage() {
       window.location.href = response.data.checkoutUrl;
     } else {
       load();
-    }
-  }
-
-  async function handleDownload(attachment) {
-    // Downloads always take the full size: the untouched original on paid events,
-    // the lightly compressed version otherwise.
-    const src = attachmentsService.getSrc(attachment, "full");
-    if (!src) return;
-
-    setDownloading(true);
-    try {
-      const blob = await fetch(src).then((r) => r.blob());
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `${event?.name || "moment"}-${attachment.id}.${extensionFromContentType(blob.type)}`;
-      link.click();
-      URL.revokeObjectURL(objectUrl);
-    } catch {
-      // CORS/network hiccup fetching the blob — fall back to a plain navigation
-      // so the user can still save the image manually.
-      window.open(src, "_blank");
-    } finally {
-      setDownloading(false);
     }
   }
 
@@ -161,14 +110,18 @@ export default function ManageEventPage() {
     );
   }
 
+  const attachments = event.attachments ?? [];
   const revealed = event.revealAt && new Date(event.revealAt) <= new Date();
   const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
   const ended = event.endAt && new Date(event.endAt) <= new Date();
+  // Server-computed so the creator — who shoots too — is counted alongside the
+  // participants relation they aren't part of.
+  const peopleCount = event.peopleCount ?? (event.participants?.length ?? 0) + 1;
 
   const stats = [
     { value: attachments.length, label: "Moments" },
     { value: ended ? "Ended" : "Live", label: "Status" },
-    { value: event.participants?.length ?? 0, label: "People" },
+    { value: peopleCount, label: "People" },
   ];
 
   return (
@@ -239,7 +192,7 @@ export default function ManageEventPage() {
           </span>
           <span className="flex flex-row items-center gap-1.5">
             <UserRoundIcon size={14} />
-            {event.participants?.length ?? 0} joined
+            {peopleCount} joined
           </span>
         </div>
 
@@ -300,46 +253,12 @@ export default function ManageEventPage() {
           No moments captured yet.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-2.5 px-4 mt-5">
-          {attachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="relative aspect-square rounded-2xl overflow-hidden bg-surface"
-            >
-              <button
-                type="button"
-                onClick={() => revealed && openViewer(attachment)}
-                disabled={!revealed}
-                className={cn(
-                  "w-full h-full block",
-                  revealed && "cursor-pointer",
-                )}
-              >
-                <img
-                  src={attachmentsService.getSrc(
-                    attachment,
-                    revealed ? "thumb" : "blur",
-                  )}
-                  alt=""
-                  className={cn(
-                    "w-full h-full object-cover",
-                    // No CSS blur before reveal — the bytes themselves are blurred
-                    // server-side now. scale-110 just hides the soft edges.
-                    !revealed && "scale-110",
-                  )}
-                />
-              </button>
-
-              {revealed ? (
-                <span className="absolute bottom-2.5 left-3 font-serif italic text-white text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] pointer-events-none">
-                  {attachment.userId === user.id
-                    ? "You"
-                    : attachment.user?.firstName || ""}
-                </span>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        <PhotoGrid
+          attachments={attachments}
+          currentUserId={user.id}
+          onOpen={setViewerIndex}
+          className="px-4 mt-5"
+        />
       )}
 
       <InviteSheet open={inviteOpen} setOpen={setInviteOpen} event={event} />
@@ -350,43 +269,16 @@ export default function ManageEventPage() {
         onUpdated={load}
       />
 
-      {viewerAttachment && (
-        <div className="fixed inset-0 z-260 bg-black/92 flex flex-col items-center justify-center p-4 gap-6">
-          <IconButton
-            variant="overlay"
-            onClick={closeViewer}
-            className="absolute top-4 right-4"
-            aria-label="Close"
-          >
-            <XIcon size={20} />
-          </IconButton>
-          <img
-            src={viewerSrc}
-            alt=""
-            className="max-w-full max-h-[75vh] object-contain rounded-2xl"
-          />
-          {/* Preloads the full size off-screen; the visible <img> swaps to it only
-              once it has decoded, so the thumb shows instantly with no flash. */}
-          {viewerFullSrc && viewerFullSrc !== viewerSrc && (
-            <img
-              src={viewerFullSrc}
-              alt=""
-              aria-hidden
-              className="hidden"
-              onLoad={() => setViewerSrc(viewerFullSrc)}
-            />
-          )}
-          <Button
-            variant="primary"
-            onClick={() => handleDownload(viewerAttachment)}
-            disabled={downloading}
-            className="bg-white text-foreground"
-          >
-            <DownloadIcon size={16} />
-            {downloading ? "Downloading…" : "Download"}
-          </Button>
-        </div>
-      )}
+      {viewerIndex != null ? (
+        <PhotoViewer
+          attachments={attachments}
+          index={viewerIndex}
+          onIndexChange={setViewerIndex}
+          onClose={() => setViewerIndex(null)}
+          currentUserId={user.id}
+          fileNamePrefix={event.name || "moment"}
+        />
+      ) : null}
     </div>
   );
 }

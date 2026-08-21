@@ -26,7 +26,9 @@ export default function Calendar({
       "relative mx-auto flex size-(--cell-size) items-center justify-center rounded-2xl",
       "text-base text-foreground border border-transparent cursor-pointer",
       "hover:bg-accent transition-colors",
-      "data-[disabled]:pointer-events-none data-[disabled]:text-subtle/50",
+      // Unselectable days are pushed out of focus rather than merely greyed: the blur
+      // makes "you can't pick this" legible at a glance on a dense grid of numbers.
+      "data-[disabled]:pointer-events-none data-[disabled]:text-subtle data-[disabled]:opacity-35 data-[disabled]:blur-[1.5px]",
       "data-[outside]:text-subtle/60",
       "in-[.range-middle]:rounded-none in-[.range-end:not(.range-start)]:rounded-s-none in-[.range-start:not(.range-end)]:rounded-e-none in-[.range-middle]:data-[selected]:!bg-accent in-[.range-middle]:data-[selected]:!text-foreground",
       "outline-none focus-visible:z-1 focus-visible:ring-[3px] focus-visible:ring-ring/40",

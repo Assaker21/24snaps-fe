@@ -1,14 +1,17 @@
 import {
+  AlarmClockIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   ClockIcon,
+  EyeIcon,
   HourglassIcon,
   ImagePlusIcon,
   InfinityIcon,
   PencilIcon,
   UserIcon,
+  ZapIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Calendar from "./components/Calendar.component";
 import {
   TimePicker,
@@ -22,6 +25,8 @@ import IconButton from "../../../../components/IconButton.component";
 import SectionLabel from "../../../../components/SectionLabel.component";
 import OptionTile from "../../../../components/OptionTile.component";
 import Toggle from "../../../../components/Toggle.component";
+import AlertDialog from "../../../../components/AlertDialog.component";
+import Button from "../../../../components/Button.component";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import usersService from "../../../../services/users.service";
@@ -65,10 +70,30 @@ function formatRevealMoment(date) {
   });
 }
 
+// A picker that unfolds below the fold is a picker the user doesn't know appeared —
+// bring it into view once it's on screen. rAF waits for the layout that mounting it
+// caused, so the scroll targets the element's final position.
+function useScrollIntoViewWhen(shown) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!shown) return;
+
+    const frame = requestAnimationFrame(() => {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [shown]);
+
+  return ref;
+}
+
 // The "TIME  [11:00 PM]" row from the reference: a label and the current value as
 // a tappable chip, with the wheel picker unfolding underneath only once tapped.
 function TimeRow({ value, minTime, onChange }) {
   const [open, setOpen] = useState(false);
+  const pickerRef = useScrollIntoViewWhen(open);
 
   return (
     <div className="w-full border-t border-dashed border-border pt-5 mt-5">
@@ -84,12 +109,55 @@ function TimeRow({ value, minTime, onChange }) {
       </div>
 
       {open ? (
-        <div className="flex flex-row justify-center w-full pt-4">
+        <div
+          ref={pickerRef}
+          className="flex flex-row justify-center w-full pt-4 scroll-mt-6 scroll-mb-6"
+        >
           <TimePicker value={value} minTime={minTime} onChange={onChange} />
         </div>
       ) : null}
     </div>
   );
+}
+
+// Extracted from the reveal step's render so the wheel can own a ref and scroll itself
+// into view the moment "Additional Delay" is chosen.
+function RevealDelayRow({ hours, onChange }) {
+  const wheelRef = useScrollIntoViewWhen(true);
+
+  return (
+    <div
+      ref={wheelRef}
+      className="flex flex-col items-center justify-center w-full gap-2 scroll-mb-6"
+    >
+      <WheelColumn
+        items={Array.from({ length: 24 }, (_, i) => i + 1)}
+        value={(hours || 1) - 1}
+        onChange={(newIndex) => onChange(newIndex + 1)}
+        itemHeight={wheelSizeConfig.sm.itemHeight}
+        visibleItems={5}
+        className="w-16"
+        ariaLabel="Select hours delay"
+      />
+      <p className="text-sm text-muted-foreground">hours after the event ends</p>
+    </div>
+  );
+}
+
+// A date chosen a moment ago shouldn't be rejected because the clock ticked past it
+// while the user was still tapping Next.
+const PAST_GRACE_MS = 2 * 60 * 1000;
+
+function isPast(date) {
+  return new Date(date).getTime() < Date.now() - PAST_GRACE_MS;
+}
+
+function firstProblem(stepsToCheck, value) {
+  for (const step of stepsToCheck) {
+    const problem = step?.validate?.(value);
+    if (problem) return problem;
+  }
+  return null;
 }
 
 export default function CreateEventPage() {
@@ -107,6 +175,7 @@ export default function CreateEventPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [alert, setAlert] = useState(null);
   const [guestName, setGuestName] = useState("");
   const navigate = useNavigate();
 
@@ -132,11 +201,17 @@ export default function CreateEventPage() {
       PARTICIPANT_PLANS.find((p) => p.id == value.planId) ||
       PARTICIPANT_PLANS[0];
 
+    // "Starts now" is a moment that goes stale while the user finishes the wizard, and
+    // the step validation tolerates a couple of minutes of drift — so clamp here rather
+    // than sending the backend an event that opened before it was created.
+    const startAt =
+      new Date(value.startAt) < new Date() ? new Date() : value.startAt;
+
     const payload = {
       name: value.name,
-      startAt: value.startAt,
+      startAt,
       endAt: value.endAt,
-      revealAt: resolveRevealAt(value),
+      revealAt: resolveRevealAt({ ...value, startAt }),
       maxUsers: selectedPlan.number === -1 ? null : selectedPlan.number,
       maxAttachmentsPerUser:
         value.shotsPerPerson === -1 ? null : value.shotsPerPerson,
@@ -253,6 +328,14 @@ export default function CreateEventPage() {
       title: "When does your event start?",
       description:
         "Guests can capture photos from this time\nuntil the event closes.",
+      validate: (v) =>
+        isPast(v.startAt)
+          ? {
+              title: "That's already been and gone",
+              message:
+                "Your film can't open in the past. Pick a date and time from now onwards, or tap “Starts now”.",
+            }
+          : null,
       control: ({ value, onChange }) => {
         return (
           <div className="flex flex-col items-center w-full">
@@ -283,6 +366,18 @@ export default function CreateEventPage() {
                 onChange("startAt", time);
               }}
             />
+
+            {/* The common case — the party is happening right now — shouldn't need a
+                trip through the calendar and the wheel. */}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onChange("startAt", new Date())}
+              className="mt-5"
+            >
+              <ZapIcon size={16} />
+              The event starts now
+            </Button>
           </div>
         );
       },
@@ -291,6 +386,25 @@ export default function CreateEventPage() {
       title: "When does your event finish?",
       description:
         "The film opens now, and guests can capture\nphotos until the film closes at your chosen time.",
+      validate: (v) => {
+        if (isPast(v.endAt)) {
+          return {
+            title: "That's already been and gone",
+            message:
+              "Your film can't close in the past. Pick a date and time from now onwards.",
+          };
+        }
+
+        if (new Date(v.endAt) <= new Date(v.startAt)) {
+          return {
+            title: "Check your timings",
+            message:
+              "Your film has to close after it opens. Pick a later date or time.",
+          };
+        }
+
+        return null;
+      },
       control: ({ value, onChange }) => {
         return (
           <div className="flex flex-col items-center w-full">
@@ -353,43 +467,33 @@ export default function CreateEventPage() {
               </div>
             </div>
 
+            {/* One glyph per option — they're the only thing distinguishing the three
+                tiles at a glance, so they can't all be the same hourglass. */}
             <div className="grid grid-cols-3 gap-2.5">
               {[
-                { id: 1, label: "During\nEvent" },
-                { id: 2, label: "After\nEvent" },
-                { id: 3, label: "Additional\nDelay" },
-              ].map((button) => (
+                { id: 1, label: "During\nEvent", Icon: EyeIcon },
+                { id: 2, label: "After\nEvent", Icon: HourglassIcon },
+                { id: 3, label: "Additional\nDelay", Icon: AlarmClockIcon },
+              ].map(({ id, label, Icon }) => (
                 <OptionTile
-                  key={button.id}
-                  selected={value.reveal == button.id}
-                  onClick={() => onChange("reveal", button.id)}
+                  key={id}
+                  selected={value.reveal == id}
+                  onClick={() => onChange("reveal", id)}
                   className="flex flex-col justify-between h-24 py-4"
                 >
-                  <HourglassIcon size={18} />
+                  <Icon size={18} />
                   <span className="whitespace-pre-line text-[0.95rem]">
-                    {button.label}
+                    {label}
                   </span>
                 </OptionTile>
               ))}
             </div>
 
             {value.reveal == 3 ? (
-              <div className="flex flex-col items-center justify-center w-full gap-2">
-                <WheelColumn
-                  items={Array.from({ length: 24 }, (_, i) => i + 1)}
-                  value={(value.revealDelayHours || 1) - 1}
-                  onChange={(newIndex) =>
-                    onChange("revealDelayHours", newIndex + 1)
-                  }
-                  itemHeight={wheelSizeConfig.sm.itemHeight}
-                  visibleItems={5}
-                  className="w-16"
-                  ariaLabel="Select hours delay"
-                />
-                <p className="text-sm text-muted-foreground">
-                  hours after the event ends
-                </p>
-              </div>
+              <RevealDelayRow
+                hours={value.revealDelayHours}
+                onChange={(hours) => onChange("revealDelayHours", hours)}
+              />
             ) : null}
           </div>
         );
@@ -619,6 +723,15 @@ export default function CreateEventPage() {
         e.preventDefault();
         if (onNameStep && !guestName.trim()) return;
 
+        // A step that can be filled in wrongly says so here rather than letting the
+        // wizard advance and failing at create time. The last step re-checks every
+        // step, since the dots let the user skip past one.
+        const problem = firstProblem(isLastStep ? steps : [steps[step]], value);
+        if (problem) {
+          setAlert(problem);
+          return;
+        }
+
         if (isLastStep) {
           if (!submitting) handleCreate();
           return;
@@ -672,7 +785,18 @@ export default function CreateEventPage() {
               type="button"
               aria-label={`Go to step ${index + 1}`}
               aria-current={step === index}
-              onClick={() => setStep(index)}
+              onClick={() => {
+                // Going back is always allowed; going forward has to clear the same
+                // check the Next button applies.
+                if (index > step) {
+                  const problem = firstProblem([steps[step]], value);
+                  if (problem) {
+                    setAlert(problem);
+                    return;
+                  }
+                }
+                setStep(index);
+              }}
               className={cn(
                 "rounded-full size-1.5 transition-colors duration-200 cursor-pointer",
                 step === index ? "bg-foreground" : "bg-surface-strong",
@@ -701,6 +825,13 @@ export default function CreateEventPage() {
           <ArrowRightIcon size={16} />
         </button>
       </div>
+
+      <AlertDialog
+        open={Boolean(alert)}
+        onClose={() => setAlert(null)}
+        title={alert?.title}
+        message={alert?.message}
+      />
 
       {submitting ? (
         <div className="fixed inset-0 z-260 bg-background/85 backdrop-blur-sm flex flex-col items-center justify-center gap-5">

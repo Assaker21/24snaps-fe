@@ -29,9 +29,11 @@ async function getUploadUrl({ contentType, eventId, type, isCover, fileName }) {
 //
 // attachment.urls holds only the variants the server is willing to serve this user —
 // before an event reveals, an ordinary participant gets "blur" and nothing else, so an
-// absent entry here means the request would 403 anyway. Each entry is a same-origin API
-// path that needs the access token appended (<img> can't send headers); the dev-only
-// no-R2 fallback puts an inline data: URI on downloadUrl, usable as-is.
+// absent entry here means the request would 403 anyway. An entry is one of three things:
+//   - an absolute presigned storage URL, which the browser hits directly (what the
+//     event payload embeds, so a gallery costs one request per image, not two)
+//   - a same-origin API path needing the access token appended (<img> can't send headers)
+//   - an inline data: URI, the dev-only no-R2 fallback, usable as-is
 //
 // Variants: "full" (download), "thumb" (viewing), "blur" (pre-reveal), "cover".
 function getSrc(attachment, variant = "thumb") {
@@ -41,9 +43,12 @@ function getSrc(attachment, variant = "thumb") {
   // request would 403 (gated) or 404 (variant not generated yet), so returning
   // undefined and letting the caller show its placeholder beats a broken <img>.
   const urls = attachment.urls;
-  const url = urls && Object.keys(urls).length ? urls[variant] : attachment.downloadUrl;
+  const url =
+    urls && Object.keys(urls).length ? urls[variant] : attachment.downloadUrl;
   if (!url) return undefined;
   if (url.startsWith("data:")) return url;
+  // Already signed and absolute — appending our token would break the signature.
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
 
   const token = localStorage.getItem("accessToken");
   if (!token) return `${baseUrl}${url}`;
