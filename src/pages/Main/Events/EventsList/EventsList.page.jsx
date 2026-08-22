@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { CircleUserRoundIcon, PlusIcon } from "lucide-react";
-import eventsService from "../../../services/events.service";
-import attachmentsService from "../../../services/attachments.service";
-import Button from "../../../components/Button.component";
-import SectionLabel from "../../../components/SectionLabel.component";
-import { formatCountdown } from "../../../utils/countdown.util";
-import { encodeId } from "../../../utils/idCodec.util";
-import { useAuth } from "../../../contexts/Auth.context";
-import cn from "../../../utils/cn.util";
-import useEffectOnce from "../../../hooks/useEffectOnce.hook";
+import eventsService from "../../../../services/events.service";
+import attachmentsService from "../../../../services/attachments.service";
+import Button from "../../../../components/Button.component";
+import LoadingScreen from "../../../../components/LoadingScreen.component";
+import SectionLabel from "../../../../components/SectionLabel.component";
+import { formatCountdown } from "../../../../utils/countdown.util";
+import { encodeId } from "../../../../utils/idCodec.util";
+import { useAuth } from "../../../../contexts/Auth.context";
+import cn from "../../../../utils/cn.util";
+import useEffectOnce from "../../../../hooks/useEffectOnce.hook";
 
-function FilmRow({ event }) {
+function EventRow({ event }) {
   const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
 
   return (
@@ -25,7 +26,7 @@ function FilmRow({ event }) {
       />
       <div className="flex flex-col min-w-0">
         <span className="font-serif text-xl truncate">
-          {event.name || "Untitled film"}
+          {event.name || "Untitled event"}
         </span>
         <span className="text-xs text-muted-foreground mt-1">
           {formatCountdown(event.endAt)} · {event.attachments?.length ?? 0}{" "}
@@ -36,10 +37,11 @@ function FilmRow({ event }) {
   );
 }
 
-export default function FilmsPage() {
-  // Split at fetch time rather than during render — "has this film ended yet"
-  // depends on the clock, which can't be read while rendering.
-  const [films, setFilms] = useState(null);
+export default function EventsListPage() {
+  // Split at fetch time rather than during render — "has this event ended yet"
+  // depends on the clock, which can't be read while rendering. Ended events are the
+  // albums section.
+  const [events, setEvents] = useState(null);
   const { user, isGuest, setOpen } = useAuth();
 
   useEffectOnce(load);
@@ -49,7 +51,7 @@ export default function FilmsPage() {
     if (!response.ok) return;
 
     const now = Date.now();
-    setFilms({
+    setEvents({
       active: response.data.filter(
         (event) => !event.endAt || new Date(event.endAt).getTime() > now,
       ),
@@ -59,12 +61,12 @@ export default function FilmsPage() {
     });
   }
 
-  const active = films?.active ?? [];
-  const albums = films?.albums ?? [];
+  const active = events?.active ?? [];
+  const albums = events?.albums ?? [];
 
   return (
     <div className="w-full min-h-dvh flex flex-col pb-10">
-      {/* Top bar: wordmark left, new film + account right. */}
+      {/* Top bar: wordmark left, new event + account right. */}
       <div className="flex flex-row items-center justify-between px-4 py-3 sticky top-0 bg-background z-10">
         <Link to="/" aria-label="24snaps home">
           <img
@@ -103,25 +105,23 @@ export default function FilmsPage() {
       <div className="px-4 pt-4">
         <SectionLabel>Active</SectionLabel>
 
-        {films === null ? (
-          <p className="text-sm text-muted-foreground py-10 text-center">
-            Loading…
-          </p>
+        {events === null ? (
+          <LoadingScreen variant="inline" message="Finding your events…" />
         ) : active.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
             <span className="size-8 rounded-full bg-surface-strong" />
-            <p className="text-sm text-muted-foreground">No active films</p>
+            <p className="text-sm text-muted-foreground">No active events</p>
             <Link to="/events/create">
               <Button variant="brand">
                 <PlusIcon size={16} />
-                Create film
+                Create event
               </Button>
             </Link>
           </div>
         ) : (
           <div className="flex flex-col gap-3 mt-4">
             {active.map((event) => (
-              <FilmRow key={event.id} event={event} />
+              <EventRow key={event.id} event={event} />
             ))}
           </div>
         )}
@@ -132,7 +132,7 @@ export default function FilmsPage() {
           <SectionLabel>Albums</SectionLabel>
           <div className="flex flex-col gap-3 mt-4">
             {albums.map((event) => (
-              <FilmRow key={event.id} event={event} />
+              <EventRow key={event.id} event={event} />
             ))}
           </div>
         </div>

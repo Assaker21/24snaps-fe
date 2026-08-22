@@ -12,6 +12,7 @@ import usersService from "../../../../services/users.service";
 import attachmentsService from "../../../../services/attachments.service";
 import Button from "../../../../components/Button.component";
 import Input from "../../../../components/Input.component";
+import LoadingScreen from "../../../../components/LoadingScreen.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import { formatCountdown } from "../../../../utils/countdown.util";
@@ -64,11 +65,7 @@ export default function EventInvitationPage() {
   }
 
   if (authLoading || loading || !user || isCreator || isParticipant) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    );
+    return <LoadingScreen message="Unwrapping your invitation…" />;
   }
 
   if (!event) {
@@ -76,10 +73,10 @@ export default function EventInvitationPage() {
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
         <h1 className="font-serif text-3xl">Nothing here</h1>
         <p className="text-sm text-muted-foreground">
-          This film doesn't exist or was deleted.
+          This event doesn't exist or was deleted.
         </p>
-        <Link to="/films">
-          <Button variant="primary">Back to films</Button>
+        <Link to="/events">
+          <Button variant="primary">Back to events</Button>
         </Link>
       </div>
     );

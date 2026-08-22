@@ -13,6 +13,7 @@ import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import Button from "../../../../components/Button.component";
 import IconButton from "../../../../components/IconButton.component";
+import LoadingScreen from "../../../../components/LoadingScreen.component";
 import PhotoGrid from "../../../../components/PhotoGrid.component";
 import PhotoViewer from "../../../../components/PhotoViewer.component";
 import { useAuth } from "../../../../contexts/Auth.context";
@@ -75,11 +76,7 @@ export default function ManageEventPage() {
     !user ||
     (event && !isCreator && !isParticipant)
   ) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    );
+    return <LoadingScreen message="Developing your photos…" />;
   }
 
   if (!event) {
@@ -87,10 +84,10 @@ export default function ManageEventPage() {
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
         <h1 className="font-serif text-3xl">Nothing here</h1>
         <p className="text-sm text-muted-foreground">
-          This film doesn't exist or was deleted.
+          This event doesn't exist or was deleted.
         </p>
-        <Link to="/films">
-          <Button variant="primary">Back to films</Button>
+        <Link to="/events">
+          <Button variant="primary">Back to events</Button>
         </Link>
       </div>
     );
@@ -142,8 +139,8 @@ export default function ManageEventPage() {
         <div className="relative flex flex-row items-start justify-between p-4">
           <IconButton
             variant={coverSrc ? "overlay" : "surface"}
-            onClick={() => navigate("/films")}
-            aria-label="Back to films"
+            onClick={() => navigate("/events")}
+            aria-label="Back to events"
           >
             <ArrowLeftIcon size={18} />
           </IconButton>
@@ -151,7 +148,7 @@ export default function ManageEventPage() {
             <IconButton
               variant={coverSrc ? "overlay" : "surface"}
               onClick={() => setSettingsOpen(true)}
-              aria-label="Film settings"
+              aria-label="Event settings"
             >
               <SettingsIcon size={18} />
             </IconButton>

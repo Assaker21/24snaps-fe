@@ -27,6 +27,7 @@ import OptionTile from "../../../../components/OptionTile.component";
 import Toggle from "../../../../components/Toggle.component";
 import AlertDialog from "../../../../components/AlertDialog.component";
 import Button from "../../../../components/Button.component";
+import LoadingScreen from "../../../../components/LoadingScreen.component";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import usersService from "../../../../services/users.service";
@@ -294,14 +295,14 @@ export default function CreateEventPage() {
     {
       title: "What is the name of your event?",
       description:
-        "Choose the perfect title for your film.\nThis title will be visible to all of your film guests.",
+        "Choose the perfect title for your event.\nThis title will be visible to all of your event guests.",
       control: ({ value, onChange }) => {
         return (
           <div className="flex flex-col w-full">
             <Input
               autoFocus
               icon={<PencilIcon size={16} />}
-              placeholder="Name your film"
+              placeholder="Name your event"
               value={value.name}
               onChange={(e) => onChange("name", e.target.value)}
             />
@@ -333,7 +334,7 @@ export default function CreateEventPage() {
           ? {
               title: "That's already been and gone",
               message:
-                "Your film can't open in the past. Pick a date and time from now onwards, or tap “Starts now”.",
+                "Your event can't open in the past. Pick a date and time from now onwards, or tap “Starts now”.",
             }
           : null,
       control: ({ value, onChange }) => {
@@ -385,13 +386,13 @@ export default function CreateEventPage() {
     {
       title: "When does your event finish?",
       description:
-        "The film opens now, and guests can capture\nphotos until the film closes at your chosen time.",
+        "The event opens now, and guests can capture\nphotos until the event closes at your chosen time.",
       validate: (v) => {
         if (isPast(v.endAt)) {
           return {
             title: "That's already been and gone",
             message:
-              "Your film can't close in the past. Pick a date and time from now onwards.",
+              "Your event can't close in the past. Pick a date and time from now onwards.",
           };
         }
 
@@ -399,7 +400,7 @@ export default function CreateEventPage() {
           return {
             title: "Check your timings",
             message:
-              "Your film has to close after it opens. Pick a later date or time.",
+              "Your event has to close after it opens. Pick a later date or time.",
           };
         }
 
@@ -500,9 +501,9 @@ export default function CreateEventPage() {
       },
     },
     {
-      title: "Design your film invitation card.",
+      title: "Design your event invitation card.",
       description:
-        "This cover is the first thing guests see\nwhen they are invited to your film.",
+        "This cover is the first thing guests see\nwhen they are invited to your event.",
       control: ({ value, onChange }) => {
         const shots =
           value.shotsPerPerson === -1
@@ -532,7 +533,7 @@ export default function CreateEventPage() {
                     Invited by {resolvedName || "the host"}
                   </span>
                   <span className="font-serif text-[13px] leading-tight">
-                    {value.name || "Your film's name"}
+                    {value.name || "Your event's name"}
                   </span>
                   <span className="text-[7px] text-white/80">
                     {timing} · {shots}
@@ -579,7 +580,7 @@ export default function CreateEventPage() {
       },
     },
     {
-      title: "How many guests for your film?",
+      title: "How many guests for your event?",
       description:
         "Make sure all guests have a chance to take\nthe most amazing photo from your event.",
       control: ({ value, onChange }) => {
@@ -709,11 +710,7 @@ export default function CreateEventPage() {
   const isLastStep = step >= steps.length - 1;
 
   if (authLoading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    );
+    return <LoadingScreen message="Loading your camera bag…" />;
   }
 
   return (
@@ -834,10 +831,10 @@ export default function CreateEventPage() {
       />
 
       {submitting ? (
-        <div className="fixed inset-0 z-260 bg-background/85 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
-          <span className="size-9 rounded-full border-[3px] border-surface-strong border-t-foreground animate-spin" />
-          <p className="font-medium">Creating your special film</p>
-        </div>
+        <LoadingScreen
+          variant="overlay"
+          message="Creating your special event…"
+        />
       ) : null}
     </form>
   );

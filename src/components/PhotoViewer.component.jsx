@@ -48,7 +48,7 @@ export default function PhotoViewer({
   }, [index, count, onClose, onIndexChange]);
 
   // The browser decodes neighbours while the user is looking at this one, so stepping
-  // through a film feels instant instead of flashing a blank frame each time.
+  // through an album feels instant instead of flashing a blank frame each time.
   useEffect(() => {
     [index - 1, index + 1].forEach((neighbour) => {
       const src = attachmentsService.getSrc(attachments?.[neighbour], "thumb");

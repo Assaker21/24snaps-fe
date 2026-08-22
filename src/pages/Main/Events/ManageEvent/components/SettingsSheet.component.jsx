@@ -88,7 +88,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
     if (!confirm(`Delete "${event.name}"? This can't be undone.`)) return;
     setDeleting(true);
     await eventsService.remove(event.id);
-    navigate("/films");
+    navigate("/events");
   }
 
   const formatMoment = (date) =>
@@ -103,7 +103,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
       : "Not set";
 
   return (
-    <Sheet open={open} setOpen={setOpen} title="Film Settings">
+    <Sheet open={open} setOpen={setOpen} title="Event Settings">
       <div className="flex flex-col gap-2.5 mt-7">
         <Row
           icon={<PencilIcon size={16} />}

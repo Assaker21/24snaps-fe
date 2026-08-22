@@ -21,7 +21,7 @@ export default function MainSection() {
 
       <Link to="/events/create" className="mt-7">
         <Button variant="primary" size="lg">
-          Create your film
+          Create your event
           <ArrowRightIcon size={16} />
         </Button>
       </Link>

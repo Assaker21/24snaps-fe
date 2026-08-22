@@ -6,7 +6,7 @@ import CreateEventPage from "./pages/Main/Events/CreateEvent/CreateEvent.page";
 import ManageEventPage from "./pages/Main/Events/ManageEvent/ManageEvent.page";
 import EventInvitationPage from "./pages/Main/Events/Invitation/EventInvitation.page";
 import LandingPage from "./pages/Main/Landing/Landing.page";
-import FilmsPage from "./pages/Main/Films/Films.page";
+import EventsListPage from "./pages/Main/Events/EventsList/EventsList.page";
 import CameraPage from "./pages/Main/Camera/Camera.page";
 
 const router = createBrowserRouter([
@@ -24,7 +24,7 @@ const router = createBrowserRouter([
             index: true,
             element: <LandingPage />,
           },
-          { path: "films", element: <FilmsPage /> },
+          { path: "events", element: <EventsListPage /> },
           { path: "events/create", element: <CreateEventPage /> },
           {
             path: "events/invitation/:eventId",

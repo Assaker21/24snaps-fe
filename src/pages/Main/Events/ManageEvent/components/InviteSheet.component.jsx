@@ -40,8 +40,8 @@ export default function InviteSheet({ open, setOpen, event }) {
     <Sheet
       open={open}
       setOpen={setOpen}
-      title="Invite guests to your film."
-      description="Take a glimpse of your world through their lens. Invite your guests to make this film unforgettable."
+      title="Invite guests to your event."
+      description="Take a glimpse of your world through their lens. Invite your guests to make this event unforgettable."
     >
       <div className="border-t border-border mt-6 pt-8">
         <div ref={qrRef} className="flex flex-row items-center justify-center">

@@ -14,9 +14,9 @@ export default function HeaderSection() {
       </Link>
 
       <div className="flex flex-row items-center gap-2">
-        <Link to="/films">
+        <Link to="/events">
           <Button variant="secondary" size="sm">
-            Films
+            Events
           </Button>
         </Link>
 

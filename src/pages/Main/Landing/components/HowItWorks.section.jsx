@@ -2,23 +2,23 @@ import SectionLabel from "../../../../components/SectionLabel.component";
 
 const STEPS = [
   {
-    title: "Create a film",
+    title: "Create an event",
     description:
-      "Name your film, set how long it will stay open, and what kind of moment it's for.",
+      "Name your event, set how long it will stay open, and what kind of moment it's for.",
     image:
       "https://framerusercontent.com/images/nbJu7pbg8K44KjKnQE8Uw0AQh8.png?scale-down-to=1024&width=917&height=1251",
   },
   {
     title: "Invite your people",
     description:
-      "Share your film link or QR code and invite friends to capture the day with you.",
+      "Share your event link or QR code and invite friends to capture the day with you.",
     image:
       "https://framerusercontent.com/images/Wpb8D1YohQ6vf39qDAsiIw52iA.png?scale-down-to=1024&width=917&height=1251",
   },
   {
     title: "Capture Together",
     description:
-      "Take photos throughout the day, every shot fills your shared film roll.",
+      "Take photos throughout the day, every shot fills your shared album.",
     image:
       "https://framerusercontent.com/images/YmMNMwkowrw0xd36ao8AhiT4QI.png?scale-down-to=1024&width=1076&height=1251",
   },
@@ -30,7 +30,7 @@ export default function HowItWorksSection() {
       <SectionLabel>How it works</SectionLabel>
 
       <h2 className="font-serif text-3xl mt-4 mb-6">
-        How a Day <br /> Becomes a Film.
+        How a Day <br /> Becomes an Album.
       </h2>
 
       <div className="flex flex-col md:flex-row gap-3">

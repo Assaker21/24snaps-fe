@@ -25,7 +25,7 @@ function touchDistance(touches) {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
 
-// The mechanical frame counter, kept from the film design but reworked for the dark
+// The mechanical frame counter, kept from the previous design but reworked for the dark
 // chrome: the live number flanked by the two it sits between.
 function FrameCounter({ remaining }) {
   if (remaining === Infinity) {
@@ -196,7 +196,7 @@ export default function CameraPage() {
 
   const maxShots = event?.maxAttachmentsPerUser;
 
-  // Queued-but-unsent frames are spent film: counting them keeps a burst of shots from
+  // Queued-but-unsent frames are spent shots: counting them keeps a burst from
   // overrunning the event's limit while their uploads are still catching up.
   const shotsRemaining =
     maxShots == null
@@ -407,11 +407,11 @@ export default function CameraPage() {
         style={{ opacity: flash ? 0.85 : 0 }}
       />
 
-      {/* Top bar: back, the film's name and countdown, invite. */}
+      {/* Top bar: back, the event's name and countdown, invite. */}
       <div className="absolute top-0 inset-x-0 bg-black/45 backdrop-blur-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex flex-row items-center justify-between gap-3">
         <BarButton
           onClick={() => navigate(`/events/${encodeId(eventId)}`)}
-          aria-label="Back to film"
+          aria-label="Back to event"
         >
           <ArrowLeftIcon size={18} />
         </BarButton>
