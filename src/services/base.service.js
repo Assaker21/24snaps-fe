@@ -2,7 +2,7 @@ import { DEVELOPMENT } from "../config/config.js";
 
 export const baseUrl = DEVELOPMENT
   ? "http://localhost:2169"
-  : "https://batata.hoophouse.store";
+  : "https://24snaps-api.charbxl.com";
 
 export default async function baseService(uri, options = {}) {
   const {
