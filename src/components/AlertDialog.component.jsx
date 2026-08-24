@@ -1,10 +1,24 @@
 import { useEffect } from "react";
 import Button from "./Button.component";
 
-// A centred, single-acknowledgement modal for "you can't do that yet" moments. The
-// bottom Sheet is the app's usual overlay, but it is built for panels of controls with
-// no close button — this is for a short message that has to interrupt an action.
-export default function AlertDialog({ open, onClose, title, message }) {
+// A centred modal for "you can't do that yet" moments. The bottom Sheet is the app's
+// usual overlay, but it is built for panels of controls with no close button — this is
+// for a short message that has to interrupt an action.
+//
+// Passing `onConfirm` turns it into a two-button confirmation instead, for the handful
+// of actions that can't be undone (deleting an event, closing an account). Without it
+// the dialog is a single acknowledgement.
+export default function AlertDialog({
+  open,
+  onClose,
+  title,
+  message,
+  onConfirm,
+  confirmLabel = "Confirm",
+  confirmVariant = "primary",
+  cancelLabel = "Cancel",
+  busy,
+}) {
   useEffect(() => {
     if (!open) return;
 
@@ -35,14 +49,39 @@ export default function AlertDialog({ open, onClose, title, message }) {
         <p className="text-[0.95rem] text-muted-foreground leading-snug mt-3">
           {message}
         </p>
-        <Button
-          variant="primary"
-          onClick={onClose}
-          autoFocus
-          className="w-full justify-center mt-6"
-        >
-          Got it
-        </Button>
+
+        {onConfirm ? (
+          <div className="flex flex-col w-full gap-2.5 mt-6">
+            {/* Cancel is the one that takes focus: a destructive button should never
+                be one stray Enter away, even though it reads first. */}
+            <Button
+              variant={confirmVariant}
+              onClick={onConfirm}
+              disabled={busy}
+              className="w-full justify-center"
+            >
+              {confirmLabel}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={onClose}
+              disabled={busy}
+              autoFocus
+              className="w-full justify-center"
+            >
+              {cancelLabel}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="primary"
+            onClick={onClose}
+            autoFocus
+            className="w-full justify-center mt-6"
+          >
+            Got it
+          </Button>
+        )}
       </div>
     </div>
   );

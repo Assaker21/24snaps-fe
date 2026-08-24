@@ -85,20 +85,35 @@ export default function EventsListPage() {
           </Link>
 
           {/* The only way into the account now that the tab bar is gone. Signed-in
-              users get their name; guests get the prompt to sign in. */}
-          <button
-            type="button"
-            onClick={() => isGuest && setOpen(true)}
-            aria-label={isGuest ? "Sign in" : "Account"}
-            className={cn(
-              "flex flex-row items-center gap-1.5 text-sm cursor-pointer",
-              "rounded-full pl-2 pr-3 py-1.5 transition-colors hover:bg-surface",
-              isGuest ? "text-muted-foreground" : "text-foreground",
-            )}
-          >
-            <CircleUserRoundIcon size={22} />
-            {!isGuest && user?.firstName ? user.firstName : null}
-          </button>
+              users get their name and the account screen; guests have nothing to
+              show there yet, so the same chip opens the sign-in sheet instead. */}
+          {isGuest ? (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Sign in"
+              className={cn(
+                "flex flex-row items-center gap-1.5 text-sm cursor-pointer",
+                "rounded-full pl-2 pr-3 py-1.5 transition-colors hover:bg-surface",
+                "text-muted-foreground",
+              )}
+            >
+              <CircleUserRoundIcon size={22} />
+            </button>
+          ) : (
+            <Link
+              to="/account"
+              aria-label="Account"
+              className={cn(
+                "flex flex-row items-center gap-1.5 text-sm",
+                "rounded-full pl-2 pr-3 py-1.5 transition-colors hover:bg-surface",
+                "text-foreground",
+              )}
+            >
+              <CircleUserRoundIcon size={22} />
+              {user?.firstName || null}
+            </Link>
+          )}
         </div>
       </div>
 

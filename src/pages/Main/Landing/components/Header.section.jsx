@@ -25,9 +25,11 @@ export default function HeaderSection() {
             Sign in
           </Button>
         ) : (
-          <span className="text-sm font-medium px-2">
-            {user?.firstName || "Account"}
-          </span>
+          <Link to="/account">
+            <Button variant="secondary" size="sm">
+              {user?.firstName || "Account"}
+            </Button>
+          </Link>
         )}
       </div>
     </div>

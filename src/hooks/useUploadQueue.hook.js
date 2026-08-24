@@ -38,9 +38,12 @@ export default function useUploadQueue({ eventId, onSuccess } = {}) {
 
   return {
     items,
-    // Everything still owed to the server — in-flight plus parked failures. Callers use
-    // this to hold back the shot counter so a queued frame can't be spent twice.
-    outstandingCount: items.length,
+    // Only what the server is still on course to receive. A parked failure is
+    // deliberately *not* counted: a shot that didn't upload hasn't been spent, so the
+    // frame goes back to the user rather than being silently charged for a photo that
+    // isn't there. The capture itself is kept and retried regardless, and the backend
+    // enforces the real per-user limit, so a late retry landing can't overshoot.
+    outstandingCount: inFlight.length,
     uploadingCount: inFlight.length,
     failedCount: failed.length,
     enqueue: (capture) => uploadQueue.enqueue({ eventId, ...capture }),

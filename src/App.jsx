@@ -8,6 +8,7 @@ import EventInvitationPage from "./pages/Main/Events/Invitation/EventInvitation.
 import LandingPage from "./pages/Main/Landing/Landing.page";
 import EventsListPage from "./pages/Main/Events/EventsList/EventsList.page";
 import CameraPage from "./pages/Main/Camera/Camera.page";
+import AccountPage from "./pages/Main/Account/Account.page";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
             index: true,
             element: <LandingPage />,
           },
+          { path: "account", element: <AccountPage /> },
           { path: "events", element: <EventsListPage /> },
           { path: "events/create", element: <CreateEventPage /> },
           {

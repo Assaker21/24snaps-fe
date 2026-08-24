@@ -1,4 +1,5 @@
 import attachmentsService from "../services/attachments.service";
+import { saveCapture, deleteCapture, listCaptures } from "./uploadStore.util";
 import uploadFile from "./upload.util";
 
 // A module-level (not React-owned) FIFO for attachment uploads, so a capture keeps
@@ -6,6 +7,10 @@ import uploadFile from "./upload.util";
 // moment the last shot is taken, and that shot must still land. Mirrors the backend's
 // in-process image queue: bounded concurrency, a few automatic retries, then the item
 // parks in `failed` for the user to retry or discard by hand.
+//
+// Every capture is also written to IndexedDB on the way in and only deleted once the
+// server has the attachment (see uploadStore.util.js), so closing the tab mid-upload
+// postpones a shot rather than losing it — hydrate() picks it back up on the next load.
 
 const MAX_CONCURRENT = 2;
 const MAX_ATTEMPTS = 3;
@@ -13,8 +18,13 @@ const RETRY_BASE_DELAY_MS = 1500;
 
 let items = [];
 let active = 0;
-let nextId = 1;
 const listeners = new Set();
+
+function newId() {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function emit(event) {
   const snapshot = items;
@@ -37,13 +47,35 @@ function hasUnfinished() {
   );
 }
 
-// A hard reload/close is the one thing the queue can't survive, so it's the one thing
-// worth interrupting the user for.
+// The capture itself survives a reload now, so this is no longer about losing the
+// photo — it's that leaving stops the retries until the user comes back.
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", (e) => {
     if (!hasUnfinished()) return;
     e.preventDefault();
     e.returnValue = "";
+  });
+
+  // Uploads fail in bursts, and the burst is almost always the connection dropping.
+  // Coming back online is the one signal worth acting on without being asked.
+  window.addEventListener("online", () => {
+    items
+      .filter((item) => item.status === "failed")
+      .forEach((item) => retry(item.id));
+  });
+}
+
+// Only the fields worth resuming from — the status/error/timing churn the React side
+// reads would mean a write per state change for nothing.
+function persist(item) {
+  return saveCapture({
+    id: item.id,
+    blob: item.blob,
+    contentType: item.contentType,
+    eventId: item.eventId,
+    type: item.type,
+    storageKey: item.storageKey,
+    createdAt: item.createdAt,
   });
 }
 
@@ -84,6 +116,9 @@ async function run(id) {
         eventId: item.eventId,
         type: item.type,
       });
+      // Written back before the attachment call, so a tab closed between the two
+      // resumes from the uploaded bytes instead of pushing them a second time.
+      if (find(id)) await persist({ ...item, storageKey });
     }
 
     const response = await attachmentsService.create({
@@ -104,6 +139,7 @@ async function run(id) {
     // Terminal success drops the item entirely: consumers track finished uploads
     // through the `success` event, and the server's own count covers them after that.
     items = items.filter((i) => i.id !== id);
+    deleteCapture(id);
     emit({ type: "success", id, eventId: item.eventId, attachment });
     pump();
     return;
@@ -130,31 +166,57 @@ async function run(id) {
   pump();
 }
 
-// Queues one capture. Returns the item id; the blob is held until the upload lands so a
-// retry never has to go back to the camera.
+// Queues one capture. Returns the item id; the blob is held (in memory and in the
+// capture store) until the upload lands, so a retry never has to go back to the camera.
 function enqueue({ blob, contentType, eventId, type }) {
-  const id = nextId++;
+  const item = {
+    id: newId(),
+    blob,
+    contentType: contentType || blob?.type || "image/jpeg",
+    eventId,
+    type,
+    status: "pending",
+    attempts: 0,
+    storageKey: null,
+    error: null,
+    readyAt: null,
+    createdAt: Date.now(),
+  };
 
-  items = [
-    ...items,
-    {
-      id,
-      blob,
-      contentType: contentType || blob?.type || "image/jpeg",
-      eventId,
-      type,
-      status: "pending",
-      attempts: 0,
-      storageKey: null,
-      error: null,
-      readyAt: null,
-      createdAt: Date.now(),
-    },
-  ];
+  items = [...items, item];
+  persist(item);
 
   emit();
   pump();
-  return id;
+  return item.id;
+}
+
+// Reads back whatever the last session couldn't finish. Restored captures come back as
+// `pending` with a clean attempt count rather than as the failures they may have been:
+// the usual reason an upload runs out of attempts is a connection that a fresh session
+// is the best evidence yet of having recovered.
+async function hydrate() {
+  const records = await listCaptures();
+  if (!records.length) return;
+
+  const known = new Set(items.map((item) => item.id));
+  const restored = records
+    .filter((record) => record.blob && !known.has(record.id))
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .map((record) => ({
+      ...record,
+      status: "pending",
+      attempts: 0,
+      error: null,
+      readyAt: null,
+    }));
+
+  if (!restored.length) return;
+
+  // Ahead of anything queued since load: these have been waiting the longest.
+  items = [...restored, ...items];
+  emit();
+  pump();
 }
 
 function retry(id) {
@@ -176,10 +238,17 @@ function retryAllFailed(eventId) {
 // row here makes `run` treat its result as discarded.
 function discard(id) {
   items = items.filter((item) => item.id !== id);
+  deleteCapture(id);
   emit();
 }
 
+// The only path that throws a capture away without it ever reaching the server, so it
+// is also the only place the stored blob is deleted before a successful upload.
 function discardFailed(eventId) {
+  items
+    .filter((item) => item.status === "failed" && item.eventId === eventId)
+    .forEach((item) => deleteCapture(item.id));
+
   items = items.filter(
     (item) => !(item.status === "failed" && item.eventId === eventId),
   );
@@ -194,6 +263,8 @@ function subscribe(listener) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
+if (typeof window !== "undefined") hydrate();
 
 export default {
   enqueue,

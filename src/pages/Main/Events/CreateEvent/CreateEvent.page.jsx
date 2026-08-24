@@ -9,7 +9,6 @@ import {
   InfinityIcon,
   PencilIcon,
   UserIcon,
-  ZapIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Calendar from "./components/Calendar.component";
@@ -26,7 +25,6 @@ import SectionLabel from "../../../../components/SectionLabel.component";
 import OptionTile from "../../../../components/OptionTile.component";
 import Toggle from "../../../../components/Toggle.component";
 import AlertDialog from "../../../../components/AlertDialog.component";
-import Button from "../../../../components/Button.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
@@ -145,12 +143,13 @@ function RevealDelayRow({ hours, onChange }) {
   );
 }
 
-// A date chosen a moment ago shouldn't be rejected because the clock ticked past it
-// while the user was still tapping Next.
-const PAST_GRACE_MS = 2 * 60 * 1000;
-
-function isPast(date) {
-  return new Date(date).getTime() < Date.now() - PAST_GRACE_MS;
+// The wizard no longer asks when an event opens — it opens the moment it's created —
+// so the only date the user picks is the one it closes on. A day out is both the
+// app's namesake window and a finish time that is already valid if left alone.
+function defaultEndAt() {
+  const end = new Date();
+  end.setDate(end.getDate() + 1);
+  return end;
 }
 
 function firstProblem(stepsToCheck, value) {
@@ -166,8 +165,7 @@ export default function CreateEventPage() {
   const [step, setStep] = useState(0);
   const [value, setValue] = useState({
     name: "",
-    endAt: new Date(),
-    startAt: new Date(),
+    endAt: defaultEndAt(),
     reveal: 2,
     revealDelayHours: 1,
     planId: 1,
@@ -184,9 +182,10 @@ export default function CreateEventPage() {
   const resolvedName = user?.firstName || guestName.trim();
 
   // Same rule handleCreate applies, surfaced early so the reveal step can show
-  // the moment the guests will actually see.
-  function resolveRevealAt(v) {
-    if (v.reveal == 1) return v.startAt;
+  // the moment the guests will actually see. "During Event" resolves to the event's
+  // start, which is now always the moment it's created — so, effectively, right away.
+  function resolveRevealAt(v, startAt = new Date()) {
+    if (v.reveal == 1) return startAt;
     if (v.reveal == 3)
       return new Date(
         v.endAt.getTime() + (v.revealDelayHours || 1) * 3600 * 1000,
@@ -202,17 +201,15 @@ export default function CreateEventPage() {
       PARTICIPANT_PLANS.find((p) => p.id == value.planId) ||
       PARTICIPANT_PLANS[0];
 
-    // "Starts now" is a moment that goes stale while the user finishes the wizard, and
-    // the step validation tolerates a couple of minutes of drift — so clamp here rather
-    // than sending the backend an event that opened before it was created.
-    const startAt =
-      new Date(value.startAt) < new Date() ? new Date() : value.startAt;
+    // Events open on creation — there is no step asking when, so this is the only
+    // place startAt comes from.
+    const startAt = new Date();
 
     const payload = {
       name: value.name,
       startAt,
       endAt: value.endAt,
-      revealAt: resolveRevealAt({ ...value, startAt }),
+      revealAt: resolveRevealAt(value, startAt),
       maxUsers: selectedPlan.number === -1 ? null : selectedPlan.number,
       maxAttachmentsPerUser:
         value.shotsPerPerson === -1 ? null : value.shotsPerPerson,
@@ -326,15 +323,15 @@ export default function CreateEventPage() {
       },
     },
     {
-      title: "When does your event start?",
+      title: "When does your event finish?",
       description:
-        "Guests can capture photos from this time\nuntil the event closes.",
+        "The event opens as soon as you create it, and guests\ncan capture photos until it closes at your chosen time.",
       validate: (v) =>
-        isPast(v.startAt)
+        new Date(v.endAt) <= new Date()
           ? {
               title: "That's already been and gone",
               message:
-                "Your event can't open in the past. Pick a date and time from now onwards, or tap “Starts now”.",
+                "Your event opens the moment you create it, so it has to close some time after that. Pick a date and time from now onwards.",
             }
           : null,
       control: ({ value, onChange }) => {
@@ -342,75 +339,6 @@ export default function CreateEventPage() {
           <div className="flex flex-col items-center w-full">
             <Calendar
               disabled={(d) => new Date(Date.now() - 86400000) > d}
-              selected={value.startAt}
-              onSelect={(newDate) => {
-                if (!newDate) return;
-                const date = new Date(value.startAt);
-                date.setFullYear(newDate.getFullYear());
-                date.setMonth(newDate.getMonth());
-                date.setDate(newDate.getDate());
-                onChange("startAt", date);
-              }}
-            />
-            <TimeRow
-              value={value.startAt}
-              minTime={
-                equalDates(value.startAt, value.endAt) ? new Date() : null
-              }
-              onChange={(newTime) => {
-                if (!newTime) return;
-                const time = new Date(value.startAt);
-                time.setHours(newTime.getHours());
-                time.setMinutes(newTime.getMinutes());
-                time.setSeconds(0);
-                time.setMilliseconds(0);
-                onChange("startAt", time);
-              }}
-            />
-
-            {/* The common case — the party is happening right now — shouldn't need a
-                trip through the calendar and the wheel. */}
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onChange("startAt", new Date())}
-              className="mt-5"
-            >
-              <ZapIcon size={16} />
-              The event starts now
-            </Button>
-          </div>
-        );
-      },
-    },
-    {
-      title: "When does your event finish?",
-      description:
-        "The event opens now, and guests can capture\nphotos until the event closes at your chosen time.",
-      validate: (v) => {
-        if (isPast(v.endAt)) {
-          return {
-            title: "That's already been and gone",
-            message:
-              "Your event can't close in the past. Pick a date and time from now onwards.",
-          };
-        }
-
-        if (new Date(v.endAt) <= new Date(v.startAt)) {
-          return {
-            title: "Check your timings",
-            message:
-              "Your event has to close after it opens. Pick a later date or time.",
-          };
-        }
-
-        return null;
-      },
-      control: ({ value, onChange }) => {
-        return (
-          <div className="flex flex-col items-center w-full">
-            <Calendar
-              disabled={(d) => new Date(value.startAt - 86400000) > d}
               selected={value.endAt}
               onSelect={(newDate) => {
                 if (!newDate) return;
@@ -423,9 +351,9 @@ export default function CreateEventPage() {
             />
             <TimeRow
               value={value.endAt}
-              minTime={
-                equalDates(value.startAt, value.endAt) ? value.startAt : null
-              }
+              // Closing today means the wheel must not offer a time that has
+              // already passed — the event is open by then.
+              minTime={equalDates(new Date(), value.endAt) ? new Date() : null}
               onChange={(newTime) => {
                 if (!newTime) return;
                 const time = new Date(value.endAt);
@@ -509,8 +437,8 @@ export default function CreateEventPage() {
           value.shotsPerPerson === -1
             ? "Unlimited shots"
             : `${value.shotsPerPerson} shots available`;
-        // endAt starts at "now", so the countdown reads "Ended" until the user
-        // picks a finish time — not something to show off in a preview.
+        // A finish time can still be dragged back into the past on the previous
+        // step, and "Ended" is not something to show off in an invitation preview.
         const countdown = formatCountdown(value.endAt);
         const timing = countdown === "Ended" ? "Opens soon" : countdown;
 

@@ -54,7 +54,7 @@ function UploadStatus({ uploadingCount, failedCount, onRetry, onDismiss }) {
       {failedCount > 0 ? (
         <div className="flex flex-row items-center gap-2 rounded-full bg-danger/85 text-white pl-3 pr-1.5 py-1 text-xs">
           <TriangleAlertIcon size={13} />
-          <span>{failedCount} didn&apos;t upload</span>
+          <span>{failedCount} didn&apos;t upload yet</span>
           <button
             type="button"
             onClick={onRetry}
@@ -62,10 +62,13 @@ function UploadStatus({ uploadingCount, failedCount, onRetry, onDismiss }) {
           >
             Retry
           </button>
+          {/* The only way to lose a capture on purpose: everything else keeps it and
+              retries. Spelled out on hover so it isn't mistaken for "hide this". */}
           <button
             type="button"
             onClick={onDismiss}
-            aria-label="Discard failed uploads"
+            aria-label="Delete failed shots"
+            title="Delete these shots for good"
             className="px-1.5 py-0.5 text-white/70 cursor-pointer"
           >
             &times;
@@ -141,6 +144,9 @@ export default function CameraPage() {
   // Finished uploads leave the queue, so each success has to be folded into the local
   // count or the frame counter would tick back up as the queue drains. The new row goes
   // straight into the roll as well, so the gallery is current without a refetch.
+  //
+  // Uploads that fail don't come through here at all: they stay in the queue (and in
+  // browser storage) to be retried, and give their frame back in the meantime.
   const {
     outstandingCount,
     uploadingCount,
@@ -196,8 +202,10 @@ export default function CameraPage() {
 
   const maxShots = event?.maxAttachmentsPerUser;
 
-  // Queued-but-unsent frames are spent shots: counting them keeps a burst from
-  // overrunning the event's limit while their uploads are still catching up.
+  // Frames still on their way up are spent: counting them keeps a burst from
+  // overrunning the event's limit while their uploads catch up. Frames that failed are
+  // not — `outstandingCount` drops them, so a shot that didn't make it is handed back
+  // rather than charged for.
   const shotsRemaining =
     maxShots == null
       ? Infinity
