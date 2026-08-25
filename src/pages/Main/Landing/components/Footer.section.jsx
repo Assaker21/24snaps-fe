@@ -103,7 +103,7 @@ export default function FooterSection() {
 
         <div className="flex flex-row flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border mt-10 pt-6">
           <p className="text-xs text-subtle">
-            © {new Date().getFullYear()} Souwar Helwe
+            © {new Date().getFullYear()} Souwar Helwe 0.5.1
           </p>
           <p className="text-xs text-subtle italic">No download required.</p>
         </div>
