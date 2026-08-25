@@ -16,9 +16,11 @@ import IconButton from "../../../../components/IconButton.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
 import PhotoGrid from "../../../../components/PhotoGrid.component";
 import PhotoViewer from "../../../../components/PhotoViewer.component";
+import TopBar from "../../../../components/TopBar.component";
 import { useAuth } from "../../../../contexts/Auth.context";
+import useTicker from "../../../../hooks/useTicker.hook";
 import { formatCountdown } from "../../../../utils/countdown.util";
-import cn from "../../../../utils/cn.util";
+import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
@@ -28,6 +30,8 @@ export default function ManageEventPage() {
   const eventId = decodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  // So the Camera button closes itself the moment the event finishes.
+  const now = useTicker();
 
   // Coming back from the camera, the previous payload is still in hand — paint it now
   // and let load() refresh underneath rather than blanking the screen.
@@ -43,8 +47,18 @@ export default function ManageEventPage() {
 
   // One request for the whole screen: the event payload already carries its
   // attachments, scoped and gated, with presigned URLs on each.
+  //
+  // The API only hands an event to the people in it, so a 403 here is not a failure —
+  // it is the answer "you haven't joined yet", and the invitation page is where that
+  // gets resolved.
   async function load() {
     const response = await eventsService.getSingle(eventId);
+
+    if (response.status === 403) {
+      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
+      return;
+    }
+
     setEvent(response.ok ? response.data : null);
     setLoading(false);
   }
@@ -59,23 +73,22 @@ export default function ManageEventPage() {
   }
 
   const isCreator = event && user && event.creatorId === user.id;
-  const isParticipant =
-    event && user && event.participants?.some((p) => p.id === user.id);
 
-  // Non-participants only ever land here via a shared link that predates the
-  // dedicated invitation route — send them there instead of joining inline.
-  useEffect(() => {
-    if (event && user && !isCreator && !isParticipant) {
-      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
-    }
-  }, [event, user, isCreator, isParticipant, eventId, navigate]);
+  // Hiding takes a photo out of every other view, the uploader's included — so the
+  // grid is re-read from the server rather than patched, and the host's copy comes
+  // back carrying its "hidden" mark.
+  async function handleToggleHidden(attachment) {
+    const response = await attachmentsService.setHidden(
+      attachment.id,
+      !attachment.hidden,
+    );
+    if (!response.ok) return;
 
-  if (
-    authLoading ||
-    loading ||
-    !user ||
-    (event && !isCreator && !isParticipant)
-  ) {
+    eventsService.invalidate(eventId);
+    await load();
+  }
+
+  if (authLoading || loading || !user) {
     return <LoadingScreen message="Developing your photos…" />;
   }
 
@@ -109,8 +122,10 @@ export default function ManageEventPage() {
 
   const attachments = event.attachments ?? [];
   const revealed = event.revealAt && new Date(event.revealAt) <= new Date();
-  const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
-  const ended = event.endAt && new Date(event.endAt) <= new Date();
+  // Always a photo: an event with no cover of its own falls back to the shipped
+  // default rather than a grey box, so the hero keeps one treatment.
+  const coverSrc = getCoverSrc(event);
+  const ended = Boolean(event.endAt) && new Date(event.endAt).getTime() <= now;
   // Server-computed so the creator — who shoots too — is counted alongside the
   // participants relation they aren't part of.
   const peopleCount = event.peopleCount ?? (event.participants?.length ?? 0) + 1;
@@ -123,56 +138,45 @@ export default function ManageEventPage() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-background pb-12">
-      {/* Cover hero. The title and stats sit on the photo itself, so they keep the
-          reference's white-on-image treatment even in the light theme. */}
-      <div
-        className={cn(
-          "relative w-full bg-surface-strong bg-cover bg-center shrink-0",
-          coverSrc ? "min-h-[26rem]" : "min-h-[18rem]",
-        )}
-        style={coverSrc ? { backgroundImage: `url(${coverSrc})` } : undefined}
-      >
-        {coverSrc ? (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25" />
-        ) : null}
-
-        <div className="relative flex flex-row items-start justify-between p-4">
+      <TopBar
+        left={
           <IconButton
-            variant={coverSrc ? "overlay" : "surface"}
             onClick={() => navigate("/events")}
             aria-label="Back to events"
           >
             <ArrowLeftIcon size={18} />
           </IconButton>
-          {isCreator && (
-            <IconButton
-              variant={coverSrc ? "overlay" : "surface"}
+        }
+        actions={
+          isCreator ? (
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setSettingsOpen(true)}
-              aria-label="Event settings"
             >
-              <SettingsIcon size={18} />
-            </IconButton>
-          )}
-        </div>
+              <SettingsIcon size={16} />
+              Settings
+            </Button>
+          ) : null
+        }
+      />
 
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 px-5 pb-6 flex flex-col items-center text-center",
-            coverSrc ? "text-white" : "text-foreground",
-          )}
-        >
+      {/* Cover hero. The title and stats sit on the photo itself, so they keep the
+          reference's white-on-image treatment even in the light theme. */}
+      <div
+        className="relative w-full min-h-[24rem] bg-surface-strong bg-cover bg-center shrink-0"
+        style={{ backgroundImage: `url(${coverSrc})` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25" />
+
+        <div className="absolute inset-x-0 bottom-0 px-5 pt-16 pb-6 flex flex-col items-center text-center text-white">
           <h1 className="font-serif text-4xl">{event.name}</h1>
 
           <div className="flex flex-row items-start justify-between w-full max-w-sm mt-5">
             {stats.map((stat) => (
               <div key={stat.label} className="flex flex-col items-center flex-1">
                 <span className="font-serif italic text-2xl">{stat.value}</span>
-                <span
-                  className={cn(
-                    "text-xs mt-0.5",
-                    coverSrc ? "text-white/75" : "text-muted-foreground",
-                  )}
-                >
+                <span className="text-xs mt-0.5 text-white/75">
                   {stat.label}
                 </span>
               </div>
@@ -215,12 +219,31 @@ export default function ManageEventPage() {
               Invite
             </Button>
           )}
-          <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
-            <Button variant="primary" size="sm" className="w-full justify-center">
+
+          {/* An album is finished: the camera is closed for everyone, host included,
+              and the server refuses shots past this point regardless. */}
+          {ended ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled
+              className="flex-1 justify-center"
+            >
               <CameraIcon size={16} />
-              Camera
+              Event ended
             </Button>
-          </Link>
+          ) : (
+            <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full justify-center"
+              >
+                <CameraIcon size={16} />
+                Camera
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -274,6 +297,8 @@ export default function ManageEventPage() {
           onClose={() => setViewerIndex(null)}
           currentUserId={user.id}
           fileNamePrefix={event.name || "moment"}
+          canHide={isCreator}
+          onToggleHidden={handleToggleHidden}
         />
       ) : null}
     </div>

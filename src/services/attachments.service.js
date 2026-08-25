@@ -18,6 +18,15 @@ async function create(body) {
   return await baseService("/attachments", { method: "POST", body });
 }
 
+// Hiding is the host's control and the server enforces that — a participant calling
+// this gets a 403 whatever the UI shows them.
+async function setHidden(id, hidden) {
+  return await baseService(`/attachments/${id}`, {
+    method: "PUT",
+    body: { hidden },
+  });
+}
+
 async function getUploadUrl({ contentType, eventId, type, isCover, fileName }) {
   return await baseService("/attachments/upload-url", {
     method: "POST",
@@ -58,4 +67,4 @@ function getSrc(attachment, variant = "thumb") {
   return `${baseUrl}${url}${separator}token=${encodeURIComponent(token)}`;
 }
 
-export default { getMultiple, create, getUploadUrl, getSrc };
+export default { getMultiple, create, setHidden, getUploadUrl, getSrc };

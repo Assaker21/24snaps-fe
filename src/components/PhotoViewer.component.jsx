@@ -3,6 +3,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
+  EyeIcon,
+  EyeOffIcon,
   XIcon,
 } from "lucide-react";
 import attachmentsService from "../services/attachments.service";
@@ -24,12 +26,17 @@ export default function PhotoViewer({
   onClose,
   currentUserId,
   fileNamePrefix = "moment",
+  // Hiding is the host's control. The server enforces that regardless, so this only
+  // decides whether the button is worth showing.
+  canHide = false,
+  onToggleHidden,
 }) {
   const attachment = attachments?.[index];
   // Keyed by attachment id: a src for a photo we've already stepped past must never
   // be shown for the one now on screen.
   const [fullLoaded, setFullLoaded] = useState({});
   const [downloading, setDownloading] = useState(false);
+  const [hiding, setHiding] = useState(false);
   const touchStartRef = useRef(null);
 
   const count = attachments?.length ?? 0;
@@ -83,6 +90,13 @@ export default function PhotoViewer({
     } finally {
       setDownloading(false);
     }
+  }
+
+  async function handleToggleHidden() {
+    if (!onToggleHidden) return;
+    setHiding(true);
+    await onToggleHidden(attachment);
+    setHiding(false);
   }
 
   function handleTouchStart(e) {
@@ -165,19 +179,42 @@ export default function PhotoViewer({
         )}
       </div>
 
-      <div className="flex flex-row items-center justify-between gap-4 p-4 shrink-0">
-        <span className="font-serif italic text-white text-xl truncate">
-          {who}
+      <div className="flex flex-row items-center justify-between gap-3 p-4 shrink-0">
+        <span className="flex flex-col min-w-0">
+          <span className="font-serif italic text-white text-xl truncate">
+            {who}
+          </span>
+          {attachment.hidden ? (
+            <span className="flex flex-row items-center gap-1.5 text-xs text-white/60">
+              <EyeOffIcon size={12} />
+              Hidden from everyone else
+            </span>
+          ) : null}
         </span>
-        <Button
-          variant="primary"
-          onClick={handleDownload}
-          disabled={downloading}
-          className="bg-white text-foreground shrink-0"
-        >
-          <DownloadIcon size={16} />
-          {downloading ? "Downloading…" : "Download"}
-        </Button>
+
+        <div className="flex flex-row items-center gap-2 shrink-0">
+          {canHide ? (
+            <Button
+              variant="secondary"
+              onClick={handleToggleHidden}
+              disabled={hiding}
+              className="bg-white/15 text-white hover:bg-white/25"
+            >
+              {attachment.hidden ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
+              {hiding ? "Saving…" : attachment.hidden ? "Unhide" : "Hide"}
+            </Button>
+          ) : null}
+
+          <Button
+            variant="primary"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="bg-white text-foreground shrink-0"
+          >
+            <DownloadIcon size={16} />
+            {downloading ? "Downloading…" : "Download"}
+          </Button>
+        </div>
       </div>
     </div>
   );

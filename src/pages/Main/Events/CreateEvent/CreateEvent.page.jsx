@@ -26,6 +26,7 @@ import OptionTile from "../../../../components/OptionTile.component";
 import Toggle from "../../../../components/Toggle.component";
 import AlertDialog from "../../../../components/AlertDialog.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
+import TopBar from "../../../../components/TopBar.component";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import usersService from "../../../../services/users.service";
@@ -33,6 +34,7 @@ import uploadFile from "../../../../utils/upload.util";
 import { encodeId } from "../../../../utils/idCodec.util";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { formatCountdown } from "../../../../utils/countdown.util";
+import { DEFAULT_COVER_SRC } from "../../../../utils/cover.util";
 
 const PARTICIPANT_PLANS = [
   { id: 1, number: 5, price: 0 },
@@ -377,15 +379,26 @@ export default function CreateEventPage() {
 
         return (
           <div className="flex flex-col w-full gap-8">
-            {/* Stand-in for the reference's two blurred guest photos: the shape of
-                the grid the guests will see, with the moment it unlocks. */}
+            {/* The reference's two blurred guest photos — the grid as the guests will
+                see it before reveal time, with the moment it unlocks. The files ship
+                already blurred, so there is nothing sharp here to peek at. */}
             <div className="relative grid grid-cols-2 gap-3">
-              {["Yen.K", "Brian.S"].map((who) => (
+              {[
+                { name: "Layla A.", src: "/blurred-layla.jpg" },
+                { name: "Samir S.", src: "/blurred-samir.jpg" },
+              ].map(({ name, src }) => (
                 <div
-                  key={who}
-                  className="aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-br from-surface-strong via-surface to-brand-soft p-3"
+                  key={name}
+                  className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface-strong"
                 >
-                  <span className="text-xs text-subtle">{who}</span>
+                  <img
+                    src={src}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-2.5 left-3 font-serif italic text-white text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+                    {name}
+                  </span>
                 </div>
               ))}
               <div className="absolute inset-0 flex items-center justify-center px-4">
@@ -447,13 +460,13 @@ export default function CreateEventPage() {
             {/* Live preview of the invitation page, framed like a phone. */}
             <div className="w-44 rounded-[1.75rem] bg-background p-1.5 shadow-[0_10px_40px_-12px_rgba(0,0,0,0.25)]">
               <div className="rounded-[1.4rem] overflow-hidden bg-foreground/90 aspect-[9/17] flex flex-col justify-end relative">
-                {value.coverPreview ? (
-                  <img
-                    src={value.coverPreview}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : null}
+                {/* Skipping the cover isn't an empty card — guests see the shipped
+                    default, so the preview shows that rather than a black rectangle. */}
+                <img
+                  src={value.coverPreview || DEFAULT_COVER_SRC}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
                 <div className="relative flex flex-col items-center gap-1.5 p-2.5 pb-3 text-white text-center">
@@ -501,7 +514,7 @@ export default function CreateEventPage() {
             </div>
 
             <p className="text-xs text-subtle mt-3 text-center">
-              Optional — you can add a cover later.
+              Optional — skip it and your guests see the default above.
             </p>
           </div>
         );
@@ -671,20 +684,26 @@ export default function CreateEventPage() {
         setStep((s) => s + 1);
       }}
     >
-      <div className="flex flex-row px-4 pt-4 shrink-0">
-        <IconButton
-          onClick={() => {
-            if (step <= 0) {
-              navigate(-1);
-              return;
-            }
-            setStep((s) => s - 1);
-          }}
-          aria-label="Back"
-        >
-          <ArrowLeftIcon size={18} />
-        </IconButton>
-      </div>
+      {/* The wizard's back arrow steps through the form rather than the history, but
+          the bar around it is the same one every other screen wears. */}
+      <TopBar
+        className="static bg-background"
+        left={
+          <IconButton
+            type="button"
+            onClick={() => {
+              if (step <= 0) {
+                navigate(-1);
+                return;
+              }
+              setStep((s) => s - 1);
+            }}
+            aria-label="Back"
+          >
+            <ArrowLeftIcon size={18} />
+          </IconButton>
+        }
+      />
 
       <div className="w-full flex flex-col items-center px-6 mt-6 mb-9 shrink-0">
         <h1 className="font-serif text-3xl text-center max-w-[19rem]">

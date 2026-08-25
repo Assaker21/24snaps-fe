@@ -44,6 +44,22 @@ async function getSingle(id) {
   return response;
 }
 
+// The one endpoint that will describe an event to someone who isn't in it yet: name,
+// host's first name, cover and timing, and nothing else. GET /events/:id is 403 until
+// you have joined.
+async function getInvitation(id) {
+  return await baseService(`/events/${id}/invitation`, { method: "GET" });
+}
+
+// Joining used to travel as a nested Prisma write on PUT /events/:id, which is now
+// creator-only — the server decides membership here instead, checking the event is
+// live, activated and not full.
+async function join(id) {
+  const response = await baseService(`/events/${id}/join`, { method: "POST" });
+  if (response.ok) singleCache.set(String(id), response.data);
+  return response;
+}
+
 async function create(body) {
   return await baseService("/events", { method: "POST", body });
 }
@@ -69,6 +85,8 @@ async function checkout(id) {
 export default {
   getMultiple,
   getSingle,
+  getInvitation,
+  join,
   getCached,
   setCached,
   invalidate,

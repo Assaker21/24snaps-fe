@@ -45,5 +45,15 @@ export default async function uploadFile(
     return key;
   }
 
+  // A refusal is not the no-R2 fallback: the server said no — the event has ended, or
+  // you aren't part of it — and inlining the blob would only fail again one request
+  // later with a much less useful message. `response.data` is null (not an error) in
+  // the genuine no-R2 case, which falls through below.
+  if (!response.ok) {
+    throw new Error(
+      response.data?.message || `Upload refused (${response.status})`,
+    );
+  }
+
   return await blobToDataUrl(blob);
 }

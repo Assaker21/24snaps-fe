@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { CircleUserRoundIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import eventsService from "../../../../services/events.service";
-import attachmentsService from "../../../../services/attachments.service";
 import Button from "../../../../components/Button.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
 import SectionLabel from "../../../../components/SectionLabel.component";
+import TopBar from "../../../../components/TopBar.component";
 import { formatCountdown } from "../../../../utils/countdown.util";
+import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId } from "../../../../utils/idCodec.util";
-import { useAuth } from "../../../../contexts/Auth.context";
-import cn from "../../../../utils/cn.util";
 import useEffectOnce from "../../../../hooks/useEffectOnce.hook";
 
 function EventRow({ event }) {
-  const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
+  // Falls back to the shipped default, so a row is never a blank grey square.
+  const coverSrc = getCoverSrc(event);
 
   return (
     <Link
@@ -22,7 +22,7 @@ function EventRow({ event }) {
     >
       <div
         className="size-14 rounded-xl bg-surface-strong bg-cover bg-center shrink-0"
-        style={coverSrc ? { backgroundImage: `url(${coverSrc})` } : undefined}
+        style={{ backgroundImage: `url(${coverSrc})` }}
       />
       <div className="flex flex-col min-w-0">
         <span className="font-serif text-xl truncate">
@@ -42,7 +42,6 @@ export default function EventsListPage() {
   // depends on the clock, which can't be read while rendering. Ended events are the
   // albums section.
   const [events, setEvents] = useState(null);
-  const { user, isGuest, setOpen } = useAuth();
 
   useEffectOnce(load);
 
@@ -66,56 +65,17 @@ export default function EventsListPage() {
 
   return (
     <div className="w-full min-h-dvh flex flex-col pb-10">
-      {/* Top bar: wordmark left, new event + account right. */}
-      <div className="flex flex-row items-center justify-between px-4 py-3 sticky top-0 bg-background z-10">
-        <Link to="/" aria-label="24snaps home">
-          <img
-            src="/logo.jpg"
-            alt="24snaps"
-            className="size-14 -my-2 object-contain"
-          />
-        </Link>
-
-        <div className="flex flex-row items-center gap-2">
+      {/* The same bar the landing page wears — only the actions differ. */}
+      <TopBar
+        actions={
           <Link to="/events/create">
             <Button variant="primary" size="sm">
               <PlusIcon size={16} />
               New
             </Button>
           </Link>
-
-          {/* The only way into the account now that the tab bar is gone. Signed-in
-              users get their name and the account screen; guests have nothing to
-              show there yet, so the same chip opens the sign-in sheet instead. */}
-          {isGuest ? (
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              aria-label="Sign in"
-              className={cn(
-                "flex flex-row items-center gap-1.5 text-sm cursor-pointer",
-                "rounded-full pl-2 pr-3 py-1.5 transition-colors hover:bg-surface",
-                "text-muted-foreground",
-              )}
-            >
-              <CircleUserRoundIcon size={22} />
-            </button>
-          ) : (
-            <Link
-              to="/account"
-              aria-label="Account"
-              className={cn(
-                "flex flex-row items-center gap-1.5 text-sm",
-                "rounded-full pl-2 pr-3 py-1.5 transition-colors hover:bg-surface",
-                "text-foreground",
-              )}
-            >
-              <CircleUserRoundIcon size={22} />
-              {user?.firstName || null}
-            </Link>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       <div className="px-4 pt-4">
         <SectionLabel>Active</SectionLabel>

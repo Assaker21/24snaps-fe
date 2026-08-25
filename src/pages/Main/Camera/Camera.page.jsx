@@ -13,6 +13,7 @@ import eventsService from "../../../services/events.service";
 import attachmentsService from "../../../services/attachments.service";
 import useUploadQueue from "../../../hooks/useUploadQueue.hook";
 import useViewportHeight from "../../../hooks/useViewportHeight.hook";
+import useTicker from "../../../hooks/useTicker.hook";
 import { useAuth } from "../../../contexts/Auth.context";
 import { encodeId, decodeId } from "../../../utils/idCodec.util";
 import { formatCountdown } from "../../../utils/countdown.util";
@@ -111,6 +112,9 @@ export default function CameraPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const viewportHeight = useViewportHeight();
+  // Ticks so the shutter closes on its own if the event finishes while the camera
+  // is open, rather than at the next render that happens to come along.
+  const now = useTicker();
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -180,6 +184,15 @@ export default function CameraPage() {
   // which covers the shot counter, the last-shot thumbnail and the gallery alike.
   async function load() {
     const response = await eventsService.getSingle(eventId);
+
+    // Reaching the camera without having joined — a shared link, usually. Every shot
+    // would be refused on upload, so send them to the invitation instead of letting
+    // them fill the queue with failures.
+    if (response.status === 403) {
+      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
+      return;
+    }
+
     if (!response.ok) return;
 
     setEvent(response.data);
@@ -201,6 +214,11 @@ export default function CameraPage() {
   }, [eventId, authLoading]);
 
   const maxShots = event?.maxAttachmentsPerUser;
+
+  // An ended event takes the camera away from everyone, the host included. This is
+  // the cosmetic half of that rule — POST /attachments refuses a late shot regardless,
+  // so a clock that is behind (or a client that lies) changes nothing.
+  const ended = Boolean(event?.endAt) && new Date(event.endAt).getTime() <= now;
 
   // Frames still on their way up are spent: counting them keeps a burst from
   // overrunning the event's limit while their uploads catch up. Frames that failed are
@@ -291,7 +309,9 @@ export default function CameraPage() {
   const handleCapture = useCallback(async () => {
     // `shotsRemaining` is a render-time value, so a fast double-tap could read a stale
     // one — this ref closes that window for the duration of the grab.
-    if (capturingRef.current || shotsRemaining <= 0 || !trackRef.current) return;
+    if (capturingRef.current || ended || shotsRemaining <= 0 || !trackRef.current) {
+      return;
+    }
     capturingRef.current = true;
 
     setFlash(true);
@@ -333,7 +353,7 @@ export default function CameraPage() {
     } finally {
       capturingRef.current = false;
     }
-  }, [shotsRemaining, enqueue]);
+  }, [shotsRemaining, ended, enqueue]);
 
   function applyZoom(nextZoom) {
     if (!trackRef.current || !zoomCaps) return;
@@ -375,6 +395,20 @@ export default function CameraPage() {
 
   const isCreator = event && user && event.creatorId === user.id;
   const attachments = event?.attachments ?? [];
+
+  // The host can moderate straight from the roll. Re-read rather than patch: hiding
+  // changes what everyone else's payload contains, so the server's answer is the
+  // only one worth holding.
+  async function handleToggleHidden(attachment) {
+    const response = await attachmentsService.setHidden(
+      attachment.id,
+      !attachment.hidden,
+    );
+    if (!response.ok) return;
+
+    eventsService.invalidate(eventId);
+    await load();
+  }
 
   return (
     <div
@@ -501,7 +535,11 @@ export default function CameraPage() {
             )}
           </button>
 
-          {shotsRemaining <= 0 ? (
+          {ended ? (
+            <span className="text-xs text-white/80 bg-white/15 rounded-full px-4 py-2.5">
+              Event ended
+            </span>
+          ) : shotsRemaining <= 0 ? (
             <span className="text-xs text-white/80 bg-white/15 rounded-full px-4 py-2.5">
               All shots used
             </span>
@@ -540,6 +578,8 @@ export default function CameraPage() {
         event={event}
         attachments={attachments}
         currentUserId={user?.id}
+        canHide={Boolean(isCreator)}
+        onToggleHidden={handleToggleHidden}
       />
 
       {event && isCreator ? (

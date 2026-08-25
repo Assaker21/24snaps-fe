@@ -17,6 +17,7 @@ import IconButton from "../../../components/IconButton.component";
 import SectionLabel from "../../../components/SectionLabel.component";
 import AlertDialog from "../../../components/AlertDialog.component";
 import LoadingScreen from "../../../components/LoadingScreen.component";
+import TopBar from "../../../components/TopBar.component";
 import usersService from "../../../services/users.service";
 import authService from "../../../services/auth.service";
 import paymentsService from "../../../services/payments.service";
@@ -208,11 +209,13 @@ export default function AccountPage() {
 
   return (
     <div className="w-full min-h-dvh flex flex-col pb-14">
-      <div className="flex flex-row px-4 pt-4 shrink-0">
-        <IconButton onClick={() => navigate(-1)} aria-label="Back">
-          <ArrowLeftIcon size={18} />
-        </IconButton>
-      </div>
+      <TopBar
+        left={
+          <IconButton onClick={() => navigate(-1)} aria-label="Back">
+            <ArrowLeftIcon size={18} />
+          </IconButton>
+        }
+      />
 
       <div className="px-4 pt-6">
         <h1 className="font-serif text-4xl">Account</h1>

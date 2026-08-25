@@ -13,6 +13,8 @@ export default function GallerySheet({
   event,
   attachments,
   currentUserId,
+  canHide = false,
+  onToggleHidden,
 }) {
   const [viewerIndex, setViewerIndex] = useState(null);
 
@@ -56,7 +58,10 @@ export default function GallerySheet({
         </IconButton>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      {/* min-h-0 is what makes the scroll real: a flex child defaults to min-height
+          auto, so without it this column grows to fit every tile and overflow-y-auto
+          never has anything to scroll. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         {!revealed && attachments.length > 0 ? (
           <div className="flex justify-center mb-5">
             <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
@@ -94,6 +99,8 @@ export default function GallerySheet({
           onClose={() => setViewerIndex(null)}
           currentUserId={currentUserId}
           fileNamePrefix={event?.name || "moment"}
+          canHide={canHide}
+          onToggleHidden={onToggleHidden}
         />
       ) : null}
     </div>
