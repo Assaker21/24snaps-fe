@@ -10,9 +10,9 @@ export default function MainSection() {
       </h1>
 
       <p className="text-[0.95rem] text-center leading-snug mt-6 max-w-md text-muted-foreground">
-        24snaps is a premium private photo sharing app for events. Guests join
-        via QR (no download), snap memorable photos, and the album reveals after
-        the event.
+        Souwar Helwe is a premium private photo sharing app for events. Guests
+        join via QR (no download), snap memorable photos, and the album reveals
+        after the event.
       </p>
 
       <span className="text-sm italic text-subtle mt-5">

@@ -140,7 +140,9 @@ function RevealDelayRow({ hours, onChange }) {
         className="w-16"
         ariaLabel="Select hours delay"
       />
-      <p className="text-sm text-muted-foreground">hours after the event ends</p>
+      <p className="text-sm text-muted-foreground">
+        hours after the event ends
+      </p>
     </div>
   );
 }
@@ -297,7 +299,7 @@ export default function CreateEventPage() {
         "Choose the perfect title for your event.\nThis title will be visible to all of your event guests.",
       control: ({ value, onChange }) => {
         return (
-          <div className="flex flex-col w-full">
+          <div className="flex flex-col w-full pt-0.5">
             <Input
               autoFocus
               icon={<PencilIcon size={16} />}
@@ -630,15 +632,20 @@ export default function CreateEventPage() {
               <SectionLabel>Visibility permissions</SectionLabel>
               <div className="flex flex-row items-center gap-4 mt-4">
                 <Toggle
-                  checked={value.visibility === 2}
-                  onChange={(next) => onChange("visibility", next ? 2 : 1)}
+                  id="visibility"
+                  name="visibility"
+                  checked={value.visibility === 1}
+                  onChange={(next) => onChange("visibility", !next ? 2 : 1)}
                   label="Only the host can see all photos"
                 />
-                <span className="text-[0.95rem] text-muted-foreground">
+                <label
+                  for="visibility"
+                  className="text-[0.95rem] text-muted-foreground"
+                >
                   {value.visibility === 1
                     ? "Everyone can see all photos."
                     : "Only host can see all photos."}
-                </span>
+                </label>
               </div>
             </div>
           </div>

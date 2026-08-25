@@ -2,7 +2,13 @@ import cn from "../utils/cn.util";
 
 // The pill switch from the reference's visibility row: grey track when off,
 // green when on, white knob throughout.
-export default function Toggle({ checked, onChange, label, className }) {
+export default function Toggle({
+  checked,
+  onChange,
+  label,
+  className,
+  ...props
+}) {
   return (
     <button
       type="button"
@@ -20,6 +26,7 @@ export default function Toggle({ checked, onChange, label, className }) {
         checked ? "bg-emerald-500" : "bg-surface-strong",
         className,
       )}
+      {...props}
     >
       <span
         className={cn(

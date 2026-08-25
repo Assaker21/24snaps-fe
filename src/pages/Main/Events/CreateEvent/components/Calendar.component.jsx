@@ -1,5 +1,9 @@
 import cn from "../../../../../utils/cn.util.js";
-import { ArrowLeftIcon, ArrowRightIcon, ChevronsUpDownIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronsUpDownIcon,
+} from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
 // Matches the reference calendar: long thin month arrows flanking a serif
@@ -28,7 +32,7 @@ export default function Calendar({
       "hover:bg-accent transition-colors",
       // Unselectable days are pushed out of focus rather than merely greyed: the blur
       // makes "you can't pick this" legible at a glance on a dense grid of numbers.
-      "data-[disabled]:pointer-events-none data-[disabled]:text-subtle data-[disabled]:opacity-35 data-[disabled]:blur-[1.5px]",
+      "disabled:pointer-events-none disabled:text-subtle disabled:opacity-80",
       "data-[outside]:text-subtle/60",
       "in-[.range-middle]:rounded-none in-[.range-end:not(.range-start)]:rounded-s-none in-[.range-start:not(.range-end)]:rounded-e-none in-[.range-middle]:data-[selected]:!bg-accent in-[.range-middle]:data-[selected]:!text-foreground",
       "outline-none focus-visible:z-1 focus-visible:ring-[3px] focus-visible:ring-ring/40",
@@ -52,7 +56,7 @@ export default function Calendar({
       "*:!bg-brand-soft *:!border-brand-border *:!text-brand *:font-medium",
     // A dot under today, dropped once the day is also the selection.
     today:
-      "*:after:content-[''] *:after:pointer-events-none *:after:absolute *:after:bottom-1.5 *:after:start-1/2 *:after:size-[3px] *:after:-translate-x-1/2 *:after:rounded-full *:after:bg-brand [&[data-selected]>*]:after:opacity-0",
+      "*:after:content-[''] *:after:pointer-events-none *:after:absolute *:after:bottom-1.5 *:after:start-1/2 *:after:size-[3px] *:after:-translate-x-1/2 *:after:rounded-full *:after:bg-brand [&[data-selected]>*]:after:opacity-0 *:!bg-brand-soft",
     // Weeks/weekdays are table rows — widen the grid itself and let the cells
     // distribute, rather than forcing flex onto <tr>/<th>.
     month_grid: "w-full border-collapse",
@@ -130,5 +134,5 @@ export default function Calendar({
     ...props,
   };
 
-  return <DayPicker {...dayPickerProps} />;
+  return <DayPicker disabled={true} {...dayPickerProps} />;
 }

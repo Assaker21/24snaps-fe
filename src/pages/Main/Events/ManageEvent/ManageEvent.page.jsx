@@ -128,7 +128,8 @@ export default function ManageEventPage() {
   const ended = Boolean(event.endAt) && new Date(event.endAt).getTime() <= now;
   // Server-computed so the creator — who shoots too — is counted alongside the
   // participants relation they aren't part of.
-  const peopleCount = event.peopleCount ?? (event.participants?.length ?? 0) + 1;
+  const peopleCount =
+    event.peopleCount ?? (event.participants?.length ?? 0) + 1;
 
   const stats = [
     { value: attachments.length, label: "Moments" },
@@ -174,7 +175,10 @@ export default function ManageEventPage() {
 
           <div className="flex flex-row items-start justify-between w-full max-w-sm mt-5">
             {stats.map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center flex-1">
+              <div
+                key={stat.label}
+                className="flex flex-col items-center flex-1"
+              >
                 <span className="font-serif italic text-2xl">{stat.value}</span>
                 <span className="text-xs mt-0.5 text-white/75">
                   {stat.label}
@@ -198,16 +202,6 @@ export default function ManageEventPage() {
         </div>
 
         <div className="flex flex-row gap-2 mt-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled
-            title="Coming soon"
-            className="justify-center"
-          >
-            <DownloadIcon size={16} />
-            Export
-          </Button>
           {isCreator && (
             <Button
               variant="secondary"
