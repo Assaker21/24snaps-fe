@@ -3,72 +3,66 @@ import { useNavigate, useParams, Link } from "react-router";
 import {
   ArrowLeftIcon,
   CameraIcon,
+  ClockIcon,
   DownloadIcon,
   QrCodeIcon,
+  Share2Icon,
   SettingsIcon,
-  XIcon,
+  UserRoundIcon,
 } from "lucide-react";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import Button from "../../../../components/Button.component";
+import IconButton from "../../../../components/IconButton.component";
+import LoadingScreen from "../../../../components/LoadingScreen.component";
+import PhotoGrid from "../../../../components/PhotoGrid.component";
+import PhotoViewer from "../../../../components/PhotoViewer.component";
+import TopBar from "../../../../components/TopBar.component";
 import { useAuth } from "../../../../contexts/Auth.context";
+import useTicker from "../../../../hooks/useTicker.hook";
 import { formatCountdown } from "../../../../utils/countdown.util";
-import cn from "../../../../utils/cn.util";
+import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
+import ShareSheet from "./components/ShareSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
-
-function extensionFromContentType(contentType) {
-  return (contentType?.split("/")[1] || "jpg").split("+")[0];
-}
 
 export default function ManageEventPage() {
   const { eventId: encodedEventId } = useParams();
   const eventId = decodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  // So the Camera button closes itself the moment the event finishes.
+  const now = useTicker();
 
-  const [event, setEvent] = useState(null);
-  const [attachments, setAttachments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Coming back from the camera, the previous payload is still in hand — paint it now
+  // and let load() refresh underneath rather than blanking the screen.
+  const [event, setEvent] = useState(() => eventsService.getCached(eventId));
+  const [loading, setLoading] = useState(!event);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [viewerAttachment, setViewerAttachment] = useState(null);
-  // The viewer opens on the (already cached) thumb and upgrades to full size once
-  // that finishes loading — see the preloader below.
-  const [viewerSrc, setViewerSrc] = useState(null);
-  const [downloading, setDownloading] = useState(false);
-
-  const viewerFullSrc = viewerAttachment
-    ? attachmentsService.getSrc(viewerAttachment, "full")
-    : null;
-
-  function openViewer(attachment) {
-    setViewerAttachment(attachment);
-    setViewerSrc(attachmentsService.getSrc(attachment, "thumb"));
-  }
-
-  function closeViewer() {
-    setViewerAttachment(null);
-    setViewerSrc(null);
-  }
+  const [viewerIndex, setViewerIndex] = useState(null);
 
   useEffect(() => {
     if (!authLoading) load();
   }, [eventId, authLoading]);
 
+  // One request for the whole screen: the event payload already carries its
+  // attachments, scoped and gated, with presigned URLs on each.
+  //
+  // The API only hands an event to the people in it, so a 403 here is not a failure —
+  // it is the answer "you haven't joined yet", and the invitation page is where that
+  // gets resolved.
   async function load() {
-    setLoading(true);
     const response = await eventsService.getSingle(eventId);
-    if (response.ok) {
-      setEvent(response.data);
-      const attachmentsResponse = await attachmentsService.getMultiple({
-        eventId,
-      });
-      if (attachmentsResponse.ok) setAttachments(attachmentsResponse.data);
-    } else {
-      setEvent(null);
+
+    if (response.status === 403) {
+      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
+      return;
     }
+
+    setEvent(response.ok ? response.data : null);
     setLoading(false);
   }
 
@@ -81,58 +75,35 @@ export default function ManageEventPage() {
     }
   }
 
-  async function handleDownload(attachment) {
-    // Downloads always take the full size: the untouched original on paid events,
-    // the lightly compressed version otherwise.
-    const src = attachmentsService.getSrc(attachment, "full");
-    if (!src) return;
+  const isCreator = event && user && event.creatorId === user.id;
 
-    setDownloading(true);
-    try {
-      const blob = await fetch(src).then((r) => r.blob());
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `${event?.name || "moment"}-${attachment.id}.${extensionFromContentType(blob.type)}`;
-      link.click();
-      URL.revokeObjectURL(objectUrl);
-    } catch {
-      // CORS/network hiccup fetching the blob — fall back to a plain navigation
-      // so the user can still save the image manually.
-      window.open(src, "_blank");
-    } finally {
-      setDownloading(false);
-    }
+  // Hiding takes a photo out of every other view, the uploader's included — so the
+  // grid is re-read from the server rather than patched, and the host's copy comes
+  // back carrying its "hidden" mark.
+  async function handleToggleHidden(attachment) {
+    const response = await attachmentsService.setHidden(
+      attachment.id,
+      !attachment.hidden,
+    );
+    if (!response.ok) return;
+
+    eventsService.invalidate(eventId);
+    await load();
   }
 
-  const isCreator = event && user && event.creatorId === user.id;
-  const isParticipant =
-    event && user && event.participants?.some((p) => p.id === user.id);
-
-  // Non-participants only ever land here via a shared link that predates the
-  // dedicated invitation route — send them there instead of joining inline.
-  useEffect(() => {
-    if (event && user && !isCreator && !isParticipant) {
-      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
-    }
-  }, [event, user, isCreator, isParticipant, eventId, navigate]);
-
-  if (authLoading || loading || !user || (event && !isCreator && !isParticipant)) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-sm text-gray-500">
-        Loading…
-      </div>
-    );
+  if (authLoading || loading || !user) {
+    return <LoadingScreen message="Developing your photos…" />;
   }
 
   if (!event) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-sm text-gray-500">
-          This film doesn't exist or was deleted.
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <h1 className="font-serif text-3xl">Nothing here</h1>
+        <p className="text-sm text-muted-foreground">
+          This event doesn't exist or was deleted.
         </p>
-        <Link to="/films">
-          <Button variant="secondary">Back to films</Button>
+        <Link to="/events">
+          <Button variant="primary">Back to events</Button>
         </Link>
       </div>
     );
@@ -140,9 +111,9 @@ export default function ManageEventPage() {
 
   if (isCreator && !event.paidAt) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="font-serif text-2xl">Almost there</h1>
-        <p className="text-sm text-gray-500">
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <h1 className="font-serif text-3xl">Almost there</h1>
+        <p className="text-sm text-muted-foreground">
           Complete payment to activate "{event.name}".
         </p>
         <Button variant="primary" onClick={handleCheckoutRetry}>
@@ -152,116 +123,178 @@ export default function ManageEventPage() {
     );
   }
 
+  const attachments = event.attachments ?? [];
   const revealed = event.revealAt && new Date(event.revealAt) <= new Date();
-  const coverSrc = attachmentsService.getSrc(event.mainAttachment, "cover");
+  // Always a photo: an event with no cover of its own falls back to the shipped
+  // default rather than a grey box, so the hero keeps one treatment.
+  const coverSrc = getCoverSrc(event);
+  const ended = Boolean(event.endAt) && new Date(event.endAt).getTime() <= now;
+  // Server-computed so the creator — who shoots too — is counted alongside the
+  // participants relation they aren't part of.
+  const peopleCount =
+    event.peopleCount ?? (event.participants?.length ?? 0) + 1;
+
+  const stats = [
+    { value: attachments.length, label: "Moments" },
+    { value: ended ? "Ended" : "Live", label: "Status" },
+    { value: peopleCount, label: "People" },
+  ];
 
   return (
-    <div className="min-h-dvh flex flex-col pb-10">
-      <div
-        className="w-full h-56 bg-gray-300 bg-cover bg-center flex items-start justify-between p-4 shrink-0"
-        style={
-          coverSrc ? { backgroundImage: `url(${coverSrc})` } : undefined
+    <div className="min-h-dvh flex flex-col bg-background pb-12">
+      <TopBar
+        left={
+          <IconButton
+            onClick={() => navigate("/events")}
+            aria-label="Back to events"
+          >
+            <ArrowLeftIcon size={18} />
+          </IconButton>
         }
-      >
-        <button
-          onClick={() => navigate("/films")}
-          className="bg-black/40 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
-        >
-          <ArrowLeftIcon size={18} />
-        </button>
-        {isCreator && (
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="bg-black/40 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
-          >
-            <SettingsIcon size={18} />
-          </button>
-        )}
-      </div>
-
-      <div className="px-4 pt-4">
-        <h1 className="font-serif text-2xl">{event.name}</h1>
-        <p className="text-sm text-gray-500">
-          {formatCountdown(event.endAt)} · {event.participants?.length ?? 0}{" "}
-          people
-        </p>
-
-        <div className="flex flex-row gap-2 mt-4">
-          <Button
-            variant="secondary"
-            disabled
-            title="Coming soon"
-            className="flex-1 justify-center opacity-50 cursor-not-allowed"
-          >
-            <DownloadIcon size={16} />
-            Export
-          </Button>
-          {isCreator && (
+        actions={
+          isCreator ? (
             <Button
               variant="secondary"
-              onClick={() => setInviteOpen(true)}
-              className="flex-1 justify-center"
+              size="sm"
+              onClick={() => setSettingsOpen(true)}
             >
-              <QrCodeIcon size={16} />
-              Invite
+              <SettingsIcon size={16} />
+              Settings
             </Button>
-          )}
-          <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
-            <Button variant="primary" className="w-full justify-center">
-              <CameraIcon size={16} />
-              Camera
-            </Button>
-          </Link>
+          ) : null
+        }
+      />
+
+      {/* Cover hero. The title and stats sit on the photo itself, so they keep the
+          reference's white-on-image treatment even in the light theme. */}
+      <div
+        className="relative w-full min-h-[24rem] bg-surface-strong bg-cover bg-center shrink-0"
+        style={{ backgroundImage: `url(${coverSrc})` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25" />
+
+        <div className="absolute inset-x-0 bottom-0 px-5 pt-16 pb-6 flex flex-col items-center text-center text-white">
+          <h1 className="font-serif text-4xl">{event.name}</h1>
+
+          <div className="flex flex-row items-start justify-between w-full max-w-sm mt-5">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="flex flex-col items-center flex-1"
+              >
+                <span className="font-serif italic text-2xl">{stat.value}</span>
+                <span className="text-xs mt-0.5 text-white/75">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
+      <div className="px-4 pt-5">
+        <div className="flex flex-row items-center gap-4 text-sm text-muted-foreground">
+          <span className="flex flex-row items-center gap-1.5">
+            <ClockIcon size={14} />
+            {formatCountdown(event.endAt) || "Ended"}
+          </span>
+          <span className="flex flex-row items-center gap-1.5">
+            <UserRoundIcon size={14} />
+            {peopleCount} joined
+          </span>
+        </div>
+
+        <div className="flex flex-row gap-2 mt-4">
+          {/* Inviting and sharing answer opposite halves of the event's life, so they
+              take the same slot rather than sitting side by side: while it runs the
+              host is recruiting shooters, and once it is an album the only thing left
+              to do with it is publish it. */}
+          {isCreator &&
+            (ended ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShareOpen(true)}
+                className="justify-center"
+              >
+                <Share2Icon size={16} />
+                Share event
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setInviteOpen(true)}
+                className="justify-center"
+              >
+                <QrCodeIcon size={16} />
+                Invite
+              </Button>
+            ))}
+
+          {/* An album is finished: the camera is closed for everyone, host included,
+              and the server refuses shots past this point regardless. */}
+          {ended ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled
+              className="flex-1 justify-center"
+            >
+              <CameraIcon size={16} />
+              Event ended
+            </Button>
+          ) : (
+            <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full justify-center"
+              >
+                <CameraIcon size={16} />
+                Camera
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-border mx-4 mt-6" />
+
+      {/* One banner for the whole grid rather than a pill per tile — the tiles
+          themselves are already unrecoverably blurred server-side. */}
+      {!revealed && attachments.length > 0 ? (
+        <div className="flex justify-center mt-5">
+          <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
+            <ClockIcon size={13} />
+            Reveals on{" "}
+            {event.revealAt
+              ? new Date(event.revealAt).toLocaleString([], {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "soon"}
+          </span>
+        </div>
+      ) : null}
+
       {attachments.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center mt-10">
+        <p className="text-sm text-subtle text-center mt-12">
           No moments captured yet.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-2 px-4 mt-6">
-          {attachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="relative aspect-square rounded-2xl overflow-hidden bg-gray-200"
-            >
-              <button
-                type="button"
-                onClick={() => revealed && openViewer(attachment)}
-                disabled={!revealed}
-                className={cn("w-full h-full block", revealed && "cursor-pointer")}
-              >
-                <img
-                  src={attachmentsService.getSrc(
-                    attachment,
-                    revealed ? "thumb" : "blur",
-                  )}
-                  alt=""
-                  className={cn(
-                    "w-full h-full object-cover",
-                    // No CSS blur before reveal — the bytes themselves are blurred
-                    // server-side now. scale-110 just hides the soft edges.
-                    !revealed && "scale-110",
-                  )}
-                />
-              </button>
-              {!revealed && (
-                <div className="absolute inset-0 flex items-center justify-center px-2">
-                  <span className="bg-black/50 text-white text-xs rounded-full px-3 py-1 text-center">
-                    Reveals{" "}
-                    {event.revealAt
-                      ? new Date(event.revealAt).toLocaleString()
-                      : "soon"}
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <PhotoGrid
+          attachments={attachments}
+          currentUserId={user.id}
+          onOpen={setViewerIndex}
+          className="px-4 mt-5"
+        />
       )}
 
       <InviteSheet open={inviteOpen} setOpen={setInviteOpen} event={event} />
+      <ShareSheet open={shareOpen} setOpen={setShareOpen} event={event} />
       <SettingsSheet
         open={settingsOpen}
         setOpen={setSettingsOpen}
@@ -269,41 +302,18 @@ export default function ManageEventPage() {
         onUpdated={load}
       />
 
-      {viewerAttachment && (
-        <div className="fixed inset-0 z-260 bg-black/90 flex flex-col items-center justify-center p-4 gap-6">
-          <button
-            onClick={() => closeViewer()}
-            className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer"
-            aria-label="Close"
-          >
-            <XIcon size={20} />
-          </button>
-          <img
-            src={viewerSrc}
-            alt=""
-            className="max-w-full max-h-[75vh] object-contain rounded-lg"
-          />
-          {/* Preloads the full size off-screen; the visible <img> swaps to it only
-              once it has decoded, so the thumb shows instantly with no flash. */}
-          {viewerFullSrc && viewerFullSrc !== viewerSrc && (
-            <img
-              src={viewerFullSrc}
-              alt=""
-              aria-hidden
-              className="hidden"
-              onLoad={() => setViewerSrc(viewerFullSrc)}
-            />
-          )}
-          <Button
-            variant="secondary"
-            onClick={() => handleDownload(viewerAttachment)}
-            disabled={downloading}
-          >
-            <DownloadIcon size={16} />
-            {downloading ? "Downloading…" : "Download"}
-          </Button>
-        </div>
-      )}
+      {viewerIndex != null ? (
+        <PhotoViewer
+          attachments={attachments}
+          index={viewerIndex}
+          onIndexChange={setViewerIndex}
+          onClose={() => setViewerIndex(null)}
+          currentUserId={user.id}
+          fileNamePrefix={event.name || "moment"}
+          canHide={isCreator}
+          onToggleHidden={handleToggleHidden}
+        />
+      ) : null}
     </div>
   );
 }

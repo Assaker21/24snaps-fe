@@ -1,8 +1,8 @@
 import { useRef } from "react";
-import { Drawer } from "vaul";
 import QRCode from "react-qr-code";
-import { LinkIcon, DownloadIcon, XIcon } from "lucide-react";
+import { LinkIcon, DownloadIcon } from "lucide-react";
 import Button from "../../../../../components/Button.component";
+import Sheet from "../../../../../components/Sheet.component";
 import { encodeId } from "../../../../../utils/idCodec.util";
 
 export default function InviteSheet({ open, setOpen, event }) {
@@ -37,62 +37,30 @@ export default function InviteSheet({ open, setOpen, event }) {
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={setOpen}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-251" />
-        <Drawer.Content className="z-251 bg-white flex flex-col fixed bottom-0 left-0 right-0 max-h-[82vh] rounded-t-[10px]">
-          <div className="max-w-md w-full mx-auto overflow-auto p-4 rounded-t-[10px]">
-            <Drawer.Handle />
-
-            <div className="flex flex-row items-start justify-between pt-4">
-              <Drawer.Title className="text-xl font-bold font-serif flex-1 leading-tight tracking-tight">
-                Invite guests to your film.
-              </Drawer.Title>
-              <Drawer.Close asChild>
-                <Button
-                  variant="secondary"
-                  className="rounded-full aspect-square p-3"
-                >
-                  <XIcon className="size-6 p-0" />
-                </Button>
-              </Drawer.Close>
-            </div>
-
-            <Drawer.Description className="text-sm text-secondary mt-2">
-              Take a glimpse of your world through their lens. Invite your
-              guests to make this film unforgettable.
-            </Drawer.Description>
-
-            <div
-              ref={qrRef}
-              className="flex flex-row items-center justify-center py-8"
-            >
-              <div className="p-4 bg-white border border-gray-200 rounded-2xl">
-                <QRCode value={inviteUrl} size={200} />
-              </div>
-            </div>
-
-            <div className="flex flex-row gap-2 pb-4">
-              <Button
-                variant="secondary"
-                className="flex-1 justify-center"
-                onClick={handleShareLink}
-              >
-                <LinkIcon size={16} />
-                Share Link
-              </Button>
-              <Button
-                variant="secondary"
-                className="flex-1 justify-center"
-                onClick={handleSaveQr}
-              >
-                <DownloadIcon size={16} />
-                Save QR image
-              </Button>
-            </div>
+    <Sheet
+      open={open}
+      setOpen={setOpen}
+      title="Invite guests to your event."
+      description="Take a glimpse of your world through their lens. Invite your guests to make this event unforgettable."
+    >
+      <div className="border-t border-border mt-6 pt-8">
+        <div ref={qrRef} className="flex flex-row items-center justify-center">
+          <div className="p-5 bg-white rounded-3xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)]">
+            <QRCode value={inviteUrl} size={200} />
           </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+        </div>
+      </div>
+
+      <div className="flex flex-row gap-2.5 justify-center mt-8">
+        <Button variant="secondary" onClick={handleShareLink}>
+          <LinkIcon size={16} />
+          Share Link
+        </Button>
+        <Button variant="secondary" onClick={handleSaveQr}>
+          <DownloadIcon size={16} />
+          Save QR image
+        </Button>
+      </div>
+    </Sheet>
   );
 }

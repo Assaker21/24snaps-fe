@@ -27,7 +27,7 @@ export default async function uploadFile(
   if (response.ok && response.data) {
     const { uploadUrl, key } = response.data;
 
-    await fetch(uploadUrl, {
+    const put = await fetch(uploadUrl, {
       method: "PUT",
       // Must match the headers the backend signed into the presigned URL
       // (storage.js's PutObjectCommand sets ContentType + IfNoneMatch) —
@@ -36,7 +36,23 @@ export default async function uploadFile(
       body: blob,
     });
 
+    // A rejected PUT still yields a resolved promise, so without this an expired
+    // signature or a dropped connection would happily return a key pointing at nothing.
+    if (!put.ok) {
+      throw new Error(`Upload rejected by storage (${put.status})`);
+    }
+
     return key;
+  }
+
+  // A refusal is not the no-R2 fallback: the server said no — the event has ended, or
+  // you aren't part of it — and inlining the blob would only fail again one request
+  // later with a much less useful message. `response.data` is null (not an error) in
+  // the genuine no-R2 case, which falls through below.
+  if (!response.ok) {
+    throw new Error(
+      response.data?.message || `Upload refused (${response.status})`,
+    );
   }
 
   return await blobToDataUrl(blob);

@@ -1,22 +1,35 @@
+import { ArrowRightIcon } from "lucide-react";
+import { Link } from "react-router";
+import Button from "../../../../components/Button.component";
+
 export default function MainSection() {
   return (
-    <div className="flex flex-col items-center justify-center">
-      <h2 className="font-serif font-bold text-3xl text-center mt-12">
+    <div className="flex flex-col items-center justify-center px-6 pt-10">
+      <h1 className="font-serif text-[2.6rem] text-center">
         Capture <br /> your day through <br /> everyone's eyes.
-      </h2>
-      <p className="font-regular text-sm text-center px-8 leading-tight mt-6 text-gray-800">
-        24snaps is a premium private photo sharing app for events. Guests join
-        via QR (no download), snap memorable photos, and the album reveals after
-        the event.
+      </h1>
+
+      <p className="text-[0.95rem] text-center leading-snug mt-6 max-w-md text-muted-foreground">
+        Souwar Helwe is a premium private photo sharing app for events. Guests
+        join via QR (no download), snap memorable photos, and the album reveals
+        after the event.
       </p>
 
-      <span className="p-2 px-3 rounded-xl text-sm mt-8 italic">
+      <span className="text-sm italic text-subtle mt-5">
         No download required.
       </span>
 
+      <Link to="/events/create" className="mt-7">
+        <Button variant="primary" size="lg">
+          Create your event
+          <ArrowRightIcon size={16} />
+        </Button>
+      </Link>
+
       <img
         src="https://framerusercontent.com/images/yE5qTYqfi86r0Wy4jK6SdnWI.png?scale-down-to=2048&width=2694&height=2888"
-        className="rotate-20 w-[120%] mt-16 mr-20 mb-20 max-w-200"
+        alt=""
+        className="rotate-12 w-[115%] mt-14 mb-16 max-w-200"
       />
     </div>
   );

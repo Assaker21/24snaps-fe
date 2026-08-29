@@ -1,38 +1,19 @@
 import { Link } from "react-router";
-import { useAuth } from "../../../../contexts/Auth.context";
 import Button from "../../../../components/Button.component";
+import TopBar from "../../../../components/TopBar.component";
 
+// The landing page's bar is the shared one — this wrapper only names the action that
+// belongs to this screen.
 export default function HeaderSection() {
-  const { user, isGuest, setOpen } = useAuth();
-
   return (
-    <div className="w-screen flex flex-row justify-between items-center p-4 bg-white fixed top-0 left-0 z-200 ">
-      <Link
-        to="/"
-        className="font-bold font-serif flex-row items-center justify-center h-full"
-      >
-        <img src="logo.jpg" className="size-16 -my-4" />
-      </Link>
-
-      <div className="flex flex-row items-center gap-3">
-        <Link to="/films" className="text-sm font-medium">
-          Events
-        </Link>
-
-        {isGuest ? (
-          <Button
-            variant="primary"
-            className="text-sm py-2"
-            onClick={() => setOpen(true)}
-          >
-            Sign in
+    <TopBar
+      actions={
+        <Link to="/events">
+          <Button variant="secondary" size="sm">
+            Events
           </Button>
-        ) : (
-          <span className="text-sm font-medium">
-            {user?.firstName || "Account"}
-          </span>
-        )}
-      </div>
-    </div>
+        </Link>
+      }
+    />
   );
 }

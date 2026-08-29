@@ -1,18 +1,109 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { InfinityIcon, CheckIcon, ImagesIcon, PlusIcon, MinusIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ImageIcon,
+  InfinityIcon,
+  LoaderCircleIcon,
+  QrCodeIcon,
+  RefreshCwIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 import eventsService from "../../../services/events.service";
 import attachmentsService from "../../../services/attachments.service";
-import uploadFile from "../../../utils/upload.util";
+import useUploadQueue from "../../../hooks/useUploadQueue.hook";
+import useViewportHeight from "../../../hooks/useViewportHeight.hook";
+import useTicker from "../../../hooks/useTicker.hook";
 import { useAuth } from "../../../contexts/Auth.context";
 import { encodeId, decodeId } from "../../../utils/idCodec.util";
-
-const ZOOM_BUTTON_CLASS =
-  "p-2 bg-black/50 text-white rounded-full backdrop-blur-sm border border-white/20 active:scale-90 transition-transform flex items-center justify-center";
+import { formatCountdown } from "../../../utils/countdown.util";
+import cn from "../../../utils/cn.util";
+import InviteSheet from "../Events/ManageEvent/components/InviteSheet.component";
+import GallerySheet from "./components/GallerySheet.component";
 
 function touchDistance(touches) {
   const [a, b] = touches;
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+// The mechanical frame counter, kept from the previous design but reworked for the dark
+// chrome: the live number flanked by the two it sits between.
+function FrameCounter({ remaining }) {
+  if (remaining === Infinity) {
+    return (
+      <div className="flex items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white size-9">
+        <InfinityIcon size={17} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-row items-center justify-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 h-9 font-serif italic text-white">
+      <span className="text-xs text-white/40">{remaining + 1}</span>
+      <span className="text-lg leading-none">{remaining}</span>
+      <span className="text-xs text-white/40">{Math.max(0, remaining - 1)}</span>
+    </div>
+  );
+}
+
+// Uploads run behind the viewfinder, so this strip is the only place they're visible.
+// It holds its height whether or not it has anything to say, so the deck below never
+// shifts under the user's thumb mid-burst.
+function UploadStatus({ uploadingCount, failedCount, onRetry, onDismiss }) {
+  return (
+    <div className="h-7 flex items-center justify-center">
+      {failedCount > 0 ? (
+        <div className="flex flex-row items-center gap-2 rounded-full bg-danger/85 text-white pl-3 pr-1.5 py-1 text-xs">
+          <TriangleAlertIcon size={13} />
+          <span>{failedCount} didn&apos;t upload yet</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-full bg-white/25 px-2.5 py-0.5 font-medium cursor-pointer"
+          >
+            Retry
+          </button>
+          {/* The only way to lose a capture on purpose: everything else keeps it and
+              retries. Spelled out on hover so it isn't mistaken for "hide this". */}
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Delete failed shots"
+            title="Delete these shots for good"
+            className="px-1.5 py-0.5 text-white/70 cursor-pointer"
+          >
+            &times;
+          </button>
+        </div>
+      ) : uploadingCount > 0 ? (
+        <div className="flex flex-row items-center gap-2 rounded-full bg-white/15 backdrop-blur-sm text-white/85 px-3 py-1 text-xs">
+          <LoaderCircleIcon size={13} className="animate-spin" />
+          <span>
+            Uploading {uploadingCount}
+            {uploadingCount === 1 ? " shot" : " shots"}…
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// The rounded-square glyph buttons that sit on the translucent bars.
+function BarButton({ children, className, ...props }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "size-10 shrink-0 rounded-full flex items-center justify-center cursor-pointer",
+        "bg-white/15 backdrop-blur-sm text-white",
+        "transition-transform duration-150 active:scale-90",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
 }
 
 export default function CameraPage() {
@@ -20,51 +111,123 @@ export default function CameraPage() {
   const eventId = decodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const viewportHeight = useViewportHeight();
+  // Ticks so the shutter closes on its own if the event finishes while the camera
+  // is open, rather than at the next render that happens to come along.
+  const now = useTicker();
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const trackRef = useRef(null);
   const imageCaptureRef = useRef(null);
-  const pendingBlobRef = useRef(null);
   const pinchRef = useRef(null);
+  const capturingRef = useRef(false);
+  // Only the locally-captured preview URL is ours to revoke; a src that came back from
+  // the server on load is just a URL.
+  const localShotUrlRef = useRef(null);
 
-  const [image, setImage] = useState(null);
   const [numCameras, setNumCameras] = useState(0);
   const [facingMode, setFacingMode] = useState("environment");
-  const [maxShots, setMaxShots] = useState(undefined);
-  const [takenCount, setTakenCount] = useState(0);
-  const [saving, setSaving] = useState(false);
+  // Seeded from the last payload so the header and frame counter are right from the
+  // first frame — the camera must never make you wait on a request.
+  const [event, setEvent] = useState(() => eventsService.getCached(eventId));
+  const [uploadedCount, setUploadedCount] = useState(
+    () =>
+      (eventsService.getCached(eventId)?.attachments || []).filter(
+        (a) => a.userId === user?.id,
+      ).length,
+  );
   const [cameraError, setCameraError] = useState(null);
   const [lastShotSrc, setLastShotSrc] = useState(null);
+  const [flash, setFlash] = useState(false);
   const [zoomCaps, setZoomCaps] = useState(null);
   const [zoom, setZoom] = useState(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
+  // Finished uploads leave the queue, so each success has to be folded into the local
+  // count or the frame counter would tick back up as the queue drains. The new row goes
+  // straight into the roll as well, so the gallery is current without a refetch.
+  //
+  // Uploads that fail don't come through here at all: they stay in the queue (and in
+  // browser storage) to be retried, and give their frame back in the meantime.
+  const {
+    outstandingCount,
+    uploadingCount,
+    failedCount,
+    enqueue,
+    retryFailed,
+    discardFailed,
+  } = useUploadQueue({
+    eventId,
+    onSuccess: ({ attachment }) => {
+      setUploadedCount((count) => count + 1);
+      if (!attachment) return;
+
+      const prepend = (e) =>
+        e ? { ...e, attachments: [attachment, ...(e.attachments || [])] } : e;
+
+      setEvent(prepend);
+      // Keep the shared copy in step too, so stepping back to the event screen shows
+      // the shot straight away rather than a payload that predates it.
+      eventsService.setCached(eventId, prepend(eventsService.getCached(eventId)));
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      if (localShotUrlRef.current) URL.revokeObjectURL(localShotUrlRef.current);
+    };
+  }, []);
+
+  // One request: the event payload already carries its attachments with presigned URLs,
+  // which covers the shot counter, the last-shot thumbnail and the gallery alike.
+  async function load() {
+    const response = await eventsService.getSingle(eventId);
+
+    // Reaching the camera without having joined — a shared link, usually. Every shot
+    // would be refused on upload, so send them to the invitation instead of letting
+    // them fill the queue with failures.
+    if (response.status === 403) {
+      navigate(`/events/invitation/${encodeId(eventId)}`, { replace: true });
+      return;
+    }
+
+    if (!response.ok) return;
+
+    setEvent(response.data);
+
+    const mine = (response.data.attachments || []).filter(
+      (a) => a.userId === user.id,
+    );
+    setUploadedCount(mine.length);
+
+    // A shot taken this session is already on screen from its own blob — don't
+    // overwrite that with a server thumbnail that may not have been fetched yet.
+    if (mine.length && !localShotUrlRef.current) {
+      setLastShotSrc(attachmentsService.getSrc(mine[0], "thumb"));
+    }
+  }
 
   useEffect(() => {
     if (!authLoading) load();
   }, [eventId, authLoading]);
 
-  async function load() {
-    const eventResponse = await eventsService.getSingle(eventId);
-    if (eventResponse.ok) {
-      setMaxShots(eventResponse.data.maxAttachmentsPerUser);
-    }
+  const maxShots = event?.maxAttachmentsPerUser;
 
-    const attachmentsResponse = await attachmentsService.getMultiple({
-      eventId,
-      userId: user.id,
-    });
-    if (attachmentsResponse.ok) {
-      setTakenCount(attachmentsResponse.data.length);
-      const latest = attachmentsResponse.data.reduce(
-        (max, a) => (!max || a.id > max.id ? a : max),
-        null,
-      );
-      if (latest) setLastShotSrc(attachmentsService.getSrc(latest, "thumb"));
-    }
-  }
+  // An ended event takes the camera away from everyone, the host included. This is
+  // the cosmetic half of that rule — POST /attachments refuses a late shot regardless,
+  // so a clock that is behind (or a client that lies) changes nothing.
+  const ended = Boolean(event?.endAt) && new Date(event.endAt).getTime() <= now;
 
+  // Frames still on their way up are spent: counting them keeps a burst from
+  // overrunning the event's limit while their uploads catch up. Frames that failed are
+  // not — `outstandingCount` drops them, so a shot that didn't make it is handed back
+  // rather than charged for.
   const shotsRemaining =
-    maxShots == null ? Infinity : Math.max(0, maxShots - takenCount);
+    maxShots == null
+      ? Infinity
+      : Math.max(0, maxShots - uploadedCount - outstandingCount);
 
   function stopStream() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -116,9 +279,7 @@ export default function CameraPage() {
 
         const devices = await navigator.mediaDevices.enumerateDevices();
         if (!cancelled) {
-          setNumCameras(
-            devices.filter((d) => d.kind === "videoinput").length,
-          );
+          setNumCameras(devices.filter((d) => d.kind === "videoinput").length);
         }
         setCameraError(null);
       } catch (err) {
@@ -142,74 +303,57 @@ export default function CameraPage() {
     setFacingMode((m) => (m === "environment" ? "user" : "environment"));
   }, []);
 
+  // The shutter is fire-and-forget: it grabs the frame, hands it to the background
+  // queue, and gives the viewfinder straight back. Nothing here awaits the network, so
+  // the next shot is available as soon as the sensor is.
   const handleCapture = useCallback(async () => {
-    if (shotsRemaining <= 0 || !trackRef.current) return;
+    // `shotsRemaining` is a render-time value, so a fast double-tap could read a stale
+    // one — this ref closes that window for the duration of the grab.
+    if (capturingRef.current || ended || shotsRemaining <= 0 || !trackRef.current) {
+      return;
+    }
+    capturingRef.current = true;
 
-    let blob = null;
-    if (imageCaptureRef.current) {
-      try {
-        blob = await imageCaptureRef.current.takePhoto();
-      } catch {
-        blob = null;
+    setFlash(true);
+    setTimeout(() => setFlash(false), 90);
+
+    try {
+      let blob = null;
+      if (imageCaptureRef.current) {
+        try {
+          blob = await imageCaptureRef.current.takePhoto();
+        } catch {
+          blob = null;
+        }
       }
-    }
 
-    if (!blob) {
-      const video = videoRef.current;
-      if (!video) return;
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-      blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.95),
-      );
-    }
-
-    if (!blob) return;
-
-    pendingBlobRef.current = blob;
-    setImage(URL.createObjectURL(blob));
-  }, [shotsRemaining]);
-
-  const handleRetake = useCallback(() => {
-    if (image) URL.revokeObjectURL(image);
-    setImage(null);
-    pendingBlobRef.current = null;
-  }, [image]);
-
-  async function handleUsePhoto() {
-    if (!image || !pendingBlobRef.current) return;
-    setSaving(true);
-
-    const blob = pendingBlobRef.current;
-    const storageKey = await uploadFile(blob, blob.type || "image/jpeg", {
-      eventId,
-      type: "PICTURE",
-    });
-
-    const response = await attachmentsService.create({
-      storageKey,
-      type: "PICTURE",
-      eventId,
-    });
-
-    setSaving(false);
-    URL.revokeObjectURL(image);
-    setImage(null);
-    pendingBlobRef.current = null;
-
-    if (response.ok) {
-      setTakenCount((c) => c + 1);
-      setLastShotSrc(attachmentsService.getSrc(response.data, "thumb"));
-      if (
-        maxShots != null &&
-        Math.max(0, maxShots - (takenCount + 1)) <= 0
-      ) {
-        navigate(`/events/${encodeId(eventId)}`);
+      if (!blob) {
+        const video = videoRef.current;
+        if (!video) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        canvas
+          .getContext("2d")
+          .drawImage(video, 0, 0, canvas.width, canvas.height);
+        blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.95),
+        );
       }
+
+      if (!blob) return;
+
+      enqueue({ blob, contentType: blob.type || "image/jpeg", type: "PICTURE" });
+
+      // Show the shot we actually hold rather than waiting for the server's thumbnail.
+      const previewUrl = URL.createObjectURL(blob);
+      if (localShotUrlRef.current) URL.revokeObjectURL(localShotUrlRef.current);
+      localShotUrlRef.current = previewUrl;
+      setLastShotSrc(previewUrl);
+    } finally {
+      capturingRef.current = false;
     }
-  }
+  }, [shotsRemaining, ended, enqueue]);
 
   function applyZoom(nextZoom) {
     if (!trackRef.current || !zoomCaps) return;
@@ -240,157 +384,207 @@ export default function CameraPage() {
     pinchRef.current = null;
   }
 
+  // Zoom is exposed as 1x/2x stops rather than a slider. Track capabilities report zoom
+  // in their own units, where `min` is the native 1x.
+  const zoomStops = zoomCaps
+    ? [
+        { label: "1x", value: zoomCaps.min },
+        { label: "2x", value: Math.min(zoomCaps.max, zoomCaps.min * 2) },
+      ].filter((stop, index, all) => index === 0 || stop.value > all[0].value)
+    : [];
+
+  const isCreator = event && user && event.creatorId === user.id;
+  const attachments = event?.attachments ?? [];
+
+  // The host can moderate straight from the roll. Re-read rather than patch: hiding
+  // changes what everyone else's payload contains, so the server's answer is the
+  // only one worth holding.
+  async function handleToggleHidden(attachment) {
+    const response = await attachmentsService.setHidden(
+      attachment.id,
+      !attachment.hidden,
+    );
+    if (!response.ok) return;
+
+    eventsService.invalidate(eventId);
+    await load();
+  }
+
   return (
-    <div className="w-screen h-dvh absolute top-0 left-0 bg-black overflow-hidden">
-      {/* Camera viewfinder */}
-      {!image && !cameraError && (
-        <div
-          className="w-full h-full absolute top-0 left-0"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
+    <div
+      // h-dvh covers the first paint; the measured visual-viewport height then takes
+      // over, because on iOS Chrome dvh can still leave the bottom bar off screen.
+      className="relative w-full h-dvh overflow-hidden bg-black select-none"
+      style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
+    >
+      {/* Full-bleed feed. Everything else floats over it. */}
+      <div
+        className="absolute inset-0"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {cameraError ? (
+          <div className="w-full h-full flex items-center justify-center px-10 text-center text-white/75 text-sm">
+            {cameraError}
+          </div>
+        ) : (
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
             className="w-full h-full object-cover"
-            style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
+            style={{
+              transform: facingMode === "user" ? "scaleX(-1)" : "none",
+            }}
           />
-        </div>
-      )}
+        )}
+      </div>
 
-      {!image && cameraError && (
-        <div className="w-full h-full flex items-center justify-center px-10 text-center text-white text-sm">
-          {cameraError}
-        </div>
-      )}
+      {/* The shutter no longer freezes on a preview, so this blink is the only
+          confirmation that the frame was taken. */}
+      <div
+        className="absolute inset-0 bg-white pointer-events-none transition-opacity duration-200 ease-out"
+        style={{ opacity: flash ? 0.85 : 0 }}
+      />
 
-      {/* Shots remaining badge */}
-      {!image && (
-        <div className="absolute top-4 left-4 z-10 bg-black/50 text-white text-sm rounded-full px-3 py-1 backdrop-blur-sm flex flex-row items-center gap-1">
-          {shotsRemaining === Infinity ? (
-            <InfinityIcon size={14} />
-          ) : (
-            shotsRemaining
-          )}{" "}
-          shots left
-        </div>
-      )}
+      {/* Top bar: back, the event's name and countdown, invite. */}
+      <div className="absolute top-0 inset-x-0 bg-black/45 backdrop-blur-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex flex-row items-center justify-between gap-3">
+        <BarButton
+          onClick={() => navigate(`/events/${encodeId(eventId)}`)}
+          aria-label="Back to event"
+        >
+          <ArrowLeftIcon size={18} />
+        </BarButton>
 
-      {/* Zoom controls */}
-      {!image && zoomCaps && (
-        <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-2">
-          <button
-            onClick={() => applyZoom((zoom ?? zoomCaps.min) + zoomCaps.step)}
-            className={ZOOM_BUTTON_CLASS}
-            aria-label="Zoom in"
+        <div className="flex flex-col items-center min-w-0 flex-1 text-white">
+          <span className="font-serif text-xl truncate max-w-full leading-tight">
+            {event?.name || " "}
+          </span>
+          <span className="text-xs text-white/65">
+            {formatCountdown(event?.endAt)}
+          </span>
+        </div>
+
+        {isCreator ? (
+          <BarButton
+            onClick={() => setInviteOpen(true)}
+            aria-label="Invite guests"
           >
-            <PlusIcon size={18} />
-          </button>
-          <button
-            onClick={() => applyZoom((zoom ?? zoomCaps.min) - zoomCaps.step)}
-            className={ZOOM_BUTTON_CLASS}
-            aria-label="Zoom out"
-          >
-            <MinusIcon size={18} />
-          </button>
-        </div>
-      )}
+            <QrCodeIcon size={18} />
+          </BarButton>
+        ) : (
+          <span className="size-10 shrink-0" />
+        )}
+      </div>
 
-      {/* Bottom controls */}
-      {!image && (
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/80 to-transparent z-10 flex items-center justify-evenly pb-8">
-          {/* Gallery / back to event (left) */}
-          <div className="w-16 flex justify-center">
-            <button
-              onClick={() => navigate(`/events/${encodeId(eventId)}`)}
-              className="size-12 rounded-full overflow-hidden bg-black/50 text-white backdrop-blur-sm border border-white/20 active:scale-90 transition-transform flex items-center justify-center"
-              aria-label="Back to event"
-            >
-              {lastShotSrc ? (
-                <img
-                  src={lastShotSrc}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <ImagesIcon size={20} />
-              )}
-            </button>
+      {/* Bottom bar: upload status, then the counter/zoom row, then the deck. */}
+      <div className="absolute bottom-0 inset-x-0 bg-black/45 backdrop-blur-md px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] flex flex-col gap-3">
+        <UploadStatus
+          uploadingCount={uploadingCount}
+          failedCount={failedCount}
+          onRetry={retryFailed}
+          onDismiss={discardFailed}
+        />
+
+        <div className="relative flex flex-row items-center justify-center h-9">
+          <div className="absolute left-0">
+            <FrameCounter remaining={shotsRemaining} />
           </div>
 
-          {/* Shutter button (center) */}
-          {shotsRemaining <= 0 ? (
-            <span className="text-white text-sm bg-black/50 rounded-full px-4 py-2 backdrop-blur-sm">
+          {zoomStops.length > 1 ? (
+            <div className="flex flex-row items-center gap-1 bg-white/15 backdrop-blur-sm rounded-full p-1">
+              {zoomStops.map((stop) => {
+                const isActive =
+                  Math.abs((zoom ?? zoomCaps.min) - stop.value) < 0.05;
+                return (
+                  <button
+                    key={stop.label}
+                    type="button"
+                    onClick={() => applyZoom(stop.value)}
+                    className={cn(
+                      "px-3.5 py-1 rounded-full text-sm font-medium cursor-pointer transition-colors",
+                      isActive ? "bg-white text-black" : "text-white/80",
+                    )}
+                  >
+                    {stop.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Apple's triad: roll on the left, shutter centred, flip on the right. */}
+        <div className="flex flex-row items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => setGalleryOpen(true)}
+            aria-label="Open gallery"
+            className="size-12 shrink-0 rounded-xl overflow-hidden bg-white/15 text-white/70 flex items-center justify-center cursor-pointer transition-transform active:scale-90"
+          >
+            {lastShotSrc ? (
+              <img
+                src={lastShotSrc}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <ImageIcon size={20} />
+            )}
+          </button>
+
+          {ended ? (
+            <span className="text-xs text-white/80 bg-white/15 rounded-full px-4 py-2.5">
+              Event ended
+            </span>
+          ) : shotsRemaining <= 0 ? (
+            <span className="text-xs text-white/80 bg-white/15 rounded-full px-4 py-2.5">
               All shots used
             </span>
           ) : (
             <button
+              type="button"
               onClick={handleCapture}
-              className="w-20 h-20 bg-white rounded-full active:scale-90 transition-transform duration-75 ease-out shadow-[0_0_0_4px_rgba(255,255,255,0.3)]"
-              aria-label="Take Photo"
+              aria-label="Take photo"
+              className={cn(
+                "size-[4.25rem] shrink-0 rounded-full cursor-pointer",
+                "bg-white ring-[3px] ring-inset ring-black/15",
+                "border-[3px] border-white/45 bg-clip-padding",
+                "transition-[transform,opacity] duration-75 ease-out",
+                "active:scale-90 active:opacity-70",
+              )}
             />
           )}
 
-          {/* Flip camera (right) */}
-          <div className="w-16 flex justify-center">
-            {numCameras > 1 && (
-              <button
-                onClick={handleFlip}
-                className="p-3 bg-black/50 text-white rounded-full backdrop-blur-sm border border-white/20 active:scale-90 transition-transform flex items-center justify-center"
-                aria-label="Flip Camera"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="1 4 1 10 7 10" />
-                  <polyline points="23 20 23 14 17 14" />
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
-                </svg>
-              </button>
-            )}
-          </div>
+          {numCameras > 1 ? (
+            <BarButton
+              onClick={handleFlip}
+              aria-label="Flip camera"
+              className="size-12"
+            >
+              <RefreshCwIcon size={19} />
+            </BarButton>
+          ) : (
+            <span className="size-12 shrink-0" />
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Image preview overlay */}
-      {image && (
-        <>
-          <img
-            src={image}
-            alt="Captured"
-            className="w-full h-full absolute top-0 left-0 object-cover z-20"
-          />
+      <GallerySheet
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        event={event}
+        attachments={attachments}
+        currentUserId={user?.id}
+        canHide={Boolean(isCreator)}
+        onToggleHidden={handleToggleHidden}
+      />
 
-          {/* Preview bottom controls */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/80 to-transparent z-30 flex items-center justify-evenly pb-8">
-            <button
-              onClick={handleRetake}
-              disabled={saving}
-              className="px-8 py-3 bg-white/20 backdrop-blur-md text-white rounded-full text-sm font-bold border border-white/30 active:scale-90 transition-transform disabled:opacity-50"
-            >
-              Retake
-            </button>
-            <button
-              onClick={handleUsePhoto}
-              disabled={saving}
-              className="p-4 bg-white text-black rounded-full active:scale-90 transition-transform disabled:opacity-50 flex items-center justify-center"
-              aria-label="Use Photo"
-            >
-              <CheckIcon size={22} />
-            </button>
-          </div>
-        </>
-      )}
+      {event && isCreator ? (
+        <InviteSheet open={inviteOpen} setOpen={setInviteOpen} event={event} />
+      ) : null}
     </div>
   );
 }

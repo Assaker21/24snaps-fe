@@ -6,8 +6,10 @@ import CreateEventPage from "./pages/Main/Events/CreateEvent/CreateEvent.page";
 import ManageEventPage from "./pages/Main/Events/ManageEvent/ManageEvent.page";
 import EventInvitationPage from "./pages/Main/Events/Invitation/EventInvitation.page";
 import LandingPage from "./pages/Main/Landing/Landing.page";
-import FilmsPage from "./pages/Main/Films/Films.page";
+import EventsListPage from "./pages/Main/Events/EventsList/EventsList.page";
 import CameraPage from "./pages/Main/Camera/Camera.page";
+import AccountPage from "./pages/Main/Account/Account.page";
+import SharedAlbumPage from "./pages/Share/SharedAlbum.page";
 
 const router = createBrowserRouter([
   {
@@ -24,7 +26,8 @@ const router = createBrowserRouter([
             index: true,
             element: <LandingPage />,
           },
-          { path: "films", element: <FilmsPage /> },
+          { path: "account", element: <AccountPage /> },
+          { path: "events", element: <EventsListPage /> },
           { path: "events/create", element: <CreateEventPage /> },
           {
             path: "events/invitation/:eventId",
@@ -35,6 +38,15 @@ const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  // Deliberately a sibling of the app rather than a child of it: RootLayout mounts the
+  // Google, device and auth providers, and the last of those signs every visitor in as
+  // a guest on mount. A shared album has to open for someone who is nobody — no
+  // account, no device row, no token — so it hangs outside that tree entirely.
+  {
+    path: "/share/:shareId",
+    element: <SharedAlbumPage />,
+    errorElement: <ErrorLayout />,
   },
 ]);
 

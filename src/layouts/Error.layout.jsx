@@ -1,19 +1,18 @@
-import { useNavigate, useRouteError } from "react-router";
+import { useNavigate } from "react-router";
+import Button from "../components/Button.component";
 
 export default function ErrorLayout() {
-  const error = useRouteError();
   const navigate = useNavigate();
+
   return (
-    <div>
-      <span>Oppaaa!</span>
-      <span>An unexpected error has occurred.</span>
-      <button
-        onClick={() => {
-          navigate(-1);
-        }}
-      >
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center bg-background">
+      <h1 className="font-serif text-3xl">Something went sideways.</h1>
+      <p className="text-sm text-muted-foreground">
+        An unexpected error has occurred.
+      </p>
+      <Button variant="primary" onClick={() => navigate(-1)}>
         Go back
-      </button>
+      </Button>
     </div>
   );
 }

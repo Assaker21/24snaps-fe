@@ -1,8 +1,72 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap");
 @import url("https://fonts.cdnfonts.com/css/rosemartin");
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Outfit", sans-serif;
-  --font-serif: "Rosemartin", serif;
+/* The design reference in ../../UIUX is a black-background app. Every token below
+   is that palette inverted onto white: the near-black page becomes white, the
+   slightly-lifted dark card becomes a slightly-recessed light grey, and the white
+   pill CTA becomes a black one. Roles, spacing and hierarchy are unchanged.
+
+   `static` keeps every variable in the output even when no utility references it —
+   TimePicker reads `var(--background)` directly from an inline style. */
+@theme static {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Rosemartin", "Playfair Display", ui-serif, Georgia, serif;
+
+  /* Surfaces. `surface` is the mockups' #1c1c1e card, flipped. */
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0b;
+  --color-surface: #f4f4f5;
+  --color-surface-strong: #e9e9ec;
+  --color-popover: #ffffff;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-subtle: #a1a1aa;
+  --color-border: #e6e6e9;
+  --color-input: #e6e6e9;
+
+  /* Calendar/DayPicker reads `bg-accent` for its hover wash. */
+  --color-accent: #f4f4f5;
+  --color-accent-foreground: #0a0a0b;
+
+  /* Selection blue — the mockups' #7cb3e8-on-navy selected state, inverted. */
+  --color-brand: #2563eb;
+  --color-brand-soft: #eff6ff;
+  --color-brand-border: #93c5fd;
+  --color-ring: #2563eb;
+
+  --color-success: #047857;
+  --color-success-soft: #ecfdf5;
+  --color-success-border: #a7f3d0;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+
+  /* Consumed as a raw custom property by TimePicker's fade-out gradients. */
+  --background: #ffffff;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* The reference's display type is a high-contrast serif at a tight leading —
+     applied per-element via `font-serif`, so only the metrics live here. */
+  .font-serif {
+    letter-spacing: -0.015em;
+    line-height: 1.08;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-soft);
+    color: var(--color-brand);
+  }
 }

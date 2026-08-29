@@ -23,6 +23,16 @@ async function checkEmail(email) {
   });
 }
 
+// Fire-and-forget: the response says nothing about whether an account exists, so a
+// stranger can't use it to probe for registered emails.
+async function forgotPassword(email) {
+  return await baseService("/forgot-password", {
+    method: "POST",
+    requiresAuth: false,
+    body: { email },
+  });
+}
+
 async function deviceLogin(virtualId) {
   return await baseService("/auth/device", {
     method: "POST",
@@ -31,4 +41,4 @@ async function deviceLogin(virtualId) {
   });
 }
 
-export default { login, checkEmail, me, deviceLogin };
+export default { login, checkEmail, forgotPassword, me, deviceLogin };
