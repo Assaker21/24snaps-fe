@@ -6,6 +6,7 @@ import {
   ClockIcon,
   DownloadIcon,
   QrCodeIcon,
+  Share2Icon,
   SettingsIcon,
   UserRoundIcon,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import { formatCountdown } from "../../../../utils/countdown.util";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
+import ShareSheet from "./components/ShareSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
 
 export default function ManageEventPage() {
@@ -38,6 +40,7 @@ export default function ManageEventPage() {
   const [event, setEvent] = useState(() => eventsService.getCached(eventId));
   const [loading, setLoading] = useState(!event);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
 
@@ -202,17 +205,32 @@ export default function ManageEventPage() {
         </div>
 
         <div className="flex flex-row gap-2 mt-4">
-          {isCreator && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setInviteOpen(true)}
-              className="justify-center"
-            >
-              <QrCodeIcon size={16} />
-              Invite
-            </Button>
-          )}
+          {/* Inviting and sharing answer opposite halves of the event's life, so they
+              take the same slot rather than sitting side by side: while it runs the
+              host is recruiting shooters, and once it is an album the only thing left
+              to do with it is publish it. */}
+          {isCreator &&
+            (ended ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShareOpen(true)}
+                className="justify-center"
+              >
+                <Share2Icon size={16} />
+                Share event
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setInviteOpen(true)}
+                className="justify-center"
+              >
+                <QrCodeIcon size={16} />
+                Invite
+              </Button>
+            ))}
 
           {/* An album is finished: the camera is closed for everyone, host included,
               and the server refuses shots past this point regardless. */}
@@ -276,6 +294,7 @@ export default function ManageEventPage() {
       )}
 
       <InviteSheet open={inviteOpen} setOpen={setInviteOpen} event={event} />
+      <ShareSheet open={shareOpen} setOpen={setShareOpen} event={event} />
       <SettingsSheet
         open={settingsOpen}
         setOpen={setSettingsOpen}

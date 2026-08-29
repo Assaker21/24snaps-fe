@@ -10,6 +10,7 @@ import { formatCountdown } from "../../../../utils/countdown.util";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId } from "../../../../utils/idCodec.util";
 import useEffectOnce from "../../../../hooks/useEffectOnce.hook";
+import AlbumRow from "./components/AlbumRow.component";
 
 function EventRow({ event }) {
   // Falls back to the shipped default, so a row is never a blank grey square.
@@ -105,9 +106,12 @@ export default function EventsListPage() {
       {albums.length > 0 ? (
         <div className="px-4 pt-8 mt-4 border-t border-border">
           <SectionLabel>Albums</SectionLabel>
-          <div className="flex flex-col gap-3 mt-4">
+          {/* A finished event is an album, and an album is its photos — so these rows
+              are the strip from the reference, not the compact tile the active list
+              uses. Both come out of the same single GET /events payload. */}
+          <div className="flex flex-col gap-9 mt-5">
             {albums.map((event) => (
-              <EventRow key={event.id} event={event} />
+              <AlbumRow key={event.id} event={event} />
             ))}
           </div>
         </div>

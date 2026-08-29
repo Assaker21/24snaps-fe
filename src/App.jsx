@@ -9,6 +9,7 @@ import LandingPage from "./pages/Main/Landing/Landing.page";
 import EventsListPage from "./pages/Main/Events/EventsList/EventsList.page";
 import CameraPage from "./pages/Main/Camera/Camera.page";
 import AccountPage from "./pages/Main/Account/Account.page";
+import SharedAlbumPage from "./pages/Share/SharedAlbum.page";
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,15 @@ const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  // Deliberately a sibling of the app rather than a child of it: RootLayout mounts the
+  // Google, device and auth providers, and the last of those signs every visitor in as
+  // a guest on mount. A shared album has to open for someone who is nobody — no
+  // account, no device row, no token — so it hangs outside that tree entirely.
+  {
+    path: "/share/:shareId",
+    element: <SharedAlbumPage />,
+    errorElement: <ErrorLayout />,
   },
 ]);
 
