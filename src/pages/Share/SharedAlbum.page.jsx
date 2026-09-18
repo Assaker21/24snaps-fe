@@ -93,10 +93,10 @@ export default function SharedAlbumPage() {
       {/* Its own chrome rather than TopBar: that bar reads the auth context, and there
           isn't one here. A visitor gets the wordmark and an invitation of their own. */}
       <div className="w-full flex flex-row justify-between items-center gap-2 px-4 py-3 shrink-0 bg-background/90 backdrop-blur-md sticky top-0 z-200">
-        <Link to="/" aria-label="souwar helwe home">
+        <Link to="/" aria-label="sawwerna home">
           <img
-            src="/logo.jpg"
-            alt="souwar helwe"
+            src="/logo.png"
+            alt="sawwerna"
             className="size-14 -my-2 object-contain"
           />
         </Link>
