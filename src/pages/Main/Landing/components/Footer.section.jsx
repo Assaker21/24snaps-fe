@@ -52,9 +52,9 @@ export default function FooterSection() {
     <footer className="bg-surface rounded-t-[2rem] mt-16 px-5 pt-12 pb-9">
       <div className="max-w-3xl mx-auto flex flex-col">
         <img
-          src="/logo.jpg"
+          src="/logo.png"
           alt="Souwar Helwe"
-          className="size-14 -ml-1 object-contain"
+          className="w-18 -ml-1 object-contain"
         />
 
         <h3 className="font-serif text-3xl max-w-md mt-4">

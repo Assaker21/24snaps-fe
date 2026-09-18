@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
-import { CheckIcon, LinkIcon, RefreshCwIcon } from "lucide-react";
+import {
+  CheckIcon,
+  DownloadIcon,
+  LinkIcon,
+  RefreshCwIcon,
+  Share2Icon,
+} from "lucide-react";
 import shareService from "../../../../../services/share.service";
+import templatesService from "../../../../../services/templates.service";
+import {
+  downloadTemplateImage,
+  shareTemplateImage,
+} from "../../../../../utils/templateImage.util";
 import Button from "../../../../../components/Button.component";
 import Sheet from "../../../../../components/Sheet.component";
+import SectionLabel from "../../../../../components/SectionLabel.component";
 import { encodeId } from "../../../../../utils/idCodec.util";
 
 // Publishing a finished album. Every press of "Generate" mints a new link server-side,
@@ -15,6 +27,30 @@ export default function ShareSheet({ open, setOpen, event }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [card, setCard] = useState(null);
+  const [cardBusy, setCardBusy] = useState(false);
+
+  // The host's printable template, if they set one up. It can no longer be edited by
+  // the time this sheet is reachable — the event has ended — so the only thing left to
+  // do with it is hand it out, which is what this sheet is for.
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    templatesService.getForEvent(event.id).then((response) => {
+      if (!cancelled && response.ok) setCard(response.data.current);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, event.id]);
+
+  async function handleCard(action) {
+    setCardBusy(true);
+    await action(event, card?.generatedAt);
+    setCardBusy(false);
+  }
 
   // The link's number goes through the same codec an event id in a URL does — the API
   // deals only in the number, the address bar only in the code.
@@ -110,6 +146,41 @@ export default function ShareSheet({ open, setOpen, event }) {
           ) : null}
         </>
       )}
+
+      {/* The event's template, alongside the album link rather than instead of it: one
+          publishes the photos, the other is the card that was on the tables. */}
+      {card?.hasImage ? (
+        <div className="border-t border-border mt-8 pt-6">
+          <SectionLabel>Your template</SectionLabel>
+
+          <div className="flex flex-row items-center gap-4 mt-4">
+            <img
+              src={templatesService.getImageSrc(event.id, card.generatedAt)}
+              alt={`${card.template?.name || "Template"} preview`}
+              className="w-16 rounded-xl shadow-[0_6px_20px_-10px_rgba(0,0,0,0.4)]"
+            />
+
+            <div className="flex flex-row flex-wrap gap-2.5">
+              <Button
+                variant="secondary"
+                onClick={() => handleCard(downloadTemplateImage)}
+                disabled={cardBusy}
+              >
+                <DownloadIcon size={16} />
+                Download
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => handleCard(shareTemplateImage)}
+                disabled={cardBusy}
+              >
+                <Share2Icon size={16} />
+                Share
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </Sheet>
   );
 }

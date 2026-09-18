@@ -4,7 +4,7 @@ import {
   ArrowLeftIcon,
   CameraIcon,
   ClockIcon,
-  DownloadIcon,
+  LayoutTemplateIcon,
   QrCodeIcon,
   Share2Icon,
   SettingsIcon,
@@ -26,6 +26,7 @@ import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import ShareSheet from "./components/ShareSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
+import TemplatesSheet from "./components/TemplatesSheet.component";
 
 export default function ManageEventPage() {
   const { eventId: encodedEventId } = useParams();
@@ -42,6 +43,7 @@ export default function ManageEventPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
 
   useEffect(() => {
@@ -232,6 +234,21 @@ export default function ManageEventPage() {
               </Button>
             ))}
 
+          {/* Managing a template is the host's, and only while the event is still to
+              come or still running — a finished album's card can be downloaded from
+              here but not rewritten, which is what the sheet falls back to. */}
+          {isCreator ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setTemplatesOpen(true)}
+              className="justify-center"
+            >
+              <LayoutTemplateIcon size={16} />
+              Templates
+            </Button>
+          ) : null}
+
           {/* An album is finished: the camera is closed for everyone, host included,
               and the server refuses shots past this point regardless. */}
           {ended ? (
@@ -295,6 +312,12 @@ export default function ManageEventPage() {
 
       <InviteSheet open={inviteOpen} setOpen={setInviteOpen} event={event} />
       <ShareSheet open={shareOpen} setOpen={setShareOpen} event={event} />
+      <TemplatesSheet
+        open={templatesOpen}
+        setOpen={setTemplatesOpen}
+        event={event}
+        onUpdated={load}
+      />
       <SettingsSheet
         open={settingsOpen}
         setOpen={setSettingsOpen}
