@@ -9,6 +9,7 @@ import LandingPage from "./pages/Main/Landing/Landing.page";
 import EventsListPage from "./pages/Main/Events/EventsList/EventsList.page";
 import CameraPage from "./pages/Main/Camera/Camera.page";
 import AccountPage from "./pages/Main/Account/Account.page";
+import ResetPasswordPage from "./pages/Main/ResetPassword/ResetPassword.page";
 import SharedAlbumPage from "./pages/Share/SharedAlbum.page";
 
 const router = createBrowserRouter([
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
             element: <LandingPage />,
           },
           { path: "account", element: <AccountPage /> },
+          // Where the reset password email lands. Inside the app tree on purpose:
+          // the visitor is signed out but still gets a guest session, so the top bar
+          // and the sign-in popup behave exactly as they do everywhere else.
+          { path: "reset-password", element: <ResetPasswordPage /> },
           { path: "events", element: <EventsListPage /> },
           { path: "events/create", element: <CreateEventPage /> },
           {

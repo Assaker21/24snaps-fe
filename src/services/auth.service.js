@@ -33,6 +33,18 @@ async function forgotPassword(email) {
   });
 }
 
+// The token comes out of the link in the reset email and travels in a header, the
+// same one the API reads it from. There is no session involved — this is the one
+// authenticated call a signed-out visitor can make.
+async function resetPassword(token, password) {
+  return await baseService("/reset-password", {
+    method: "POST",
+    requiresAuth: false,
+    headers: { "reset-password-token": token },
+    body: { password },
+  });
+}
+
 async function deviceLogin(virtualId) {
   return await baseService("/auth/device", {
     method: "POST",
@@ -41,4 +53,11 @@ async function deviceLogin(virtualId) {
   });
 }
 
-export default { login, checkEmail, forgotPassword, me, deviceLogin };
+export default {
+  login,
+  checkEmail,
+  forgotPassword,
+  resetPassword,
+  me,
+  deviceLogin,
+};

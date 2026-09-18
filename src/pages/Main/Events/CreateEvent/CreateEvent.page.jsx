@@ -1,6 +1,11 @@
 import {
   AlarmClockIcon,
   ArrowLeftIcon,
+  CakeIcon,
+  GiftIcon,
+  HeartIcon,
+  PlaneIcon,
+  SparklesIcon,
   ArrowRightIcon,
   ClockIcon,
   EyeIcon,
@@ -30,6 +35,7 @@ import TopBar from "../../../../components/TopBar.component";
 import eventsService from "../../../../services/events.service";
 import attachmentsService from "../../../../services/attachments.service";
 import usersService from "../../../../services/users.service";
+import templatesService from "../../../../services/templates.service";
 import uploadFile from "../../../../utils/upload.util";
 import { encodeId } from "../../../../utils/idCodec.util";
 import { useAuth } from "../../../../contexts/Auth.context";
@@ -46,6 +52,17 @@ const PARTICIPANT_PLANS = [
   { id: 7, number: 200, price: 69.99 },
   { id: 8, number: -1, price: 99.99 },
 ];
+
+// One glyph per kind of event, keyed by the code the catalogue ships. A type the
+// backend adds later still renders — it just falls back to the generic sparkle rather
+// than needing a frontend release to appear at all.
+const EVENT_TYPE_ICONS = {
+  wedding: HeartIcon,
+  party: SparklesIcon,
+  birthday: CakeIcon,
+  travel: PlaneIcon,
+  other: GiftIcon,
+};
 
 function equalDates(d1, d2) {
   return (
@@ -167,8 +184,10 @@ function firstProblem(stepsToCheck, value) {
 export default function CreateEventPage() {
   const { user, setUser, isGuest, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
+  const [eventTypes, setEventTypes] = useState([]);
   const [value, setValue] = useState({
     name: "",
+    eventTypeId: null,
     endAt: defaultEndAt(),
     reveal: 2,
     revealDelayHours: 1,
@@ -184,6 +203,16 @@ export default function CreateEventPage() {
 
   const needsNameStep = isGuest && !user?.firstName;
   const resolvedName = user?.firstName || guestName.trim();
+
+  // The kinds of event are catalogue data, not a constant — which cards a host is
+  // offered later hangs off the one they pick here.
+  useEffect(() => {
+    templatesService.getEventTypes().then((response) => {
+      if (response.ok) setEventTypes(response.data);
+    });
+  }, []);
+
+  const selectedType = eventTypes.find((t) => t.id === value.eventTypeId);
 
   // Same rule handleCreate applies, surfaced early so the reveal step can show
   // the moment the guests will actually see. "During Event" resolves to the event's
@@ -218,6 +247,7 @@ export default function CreateEventPage() {
       maxAttachmentsPerUser:
         value.shotsPerPerson === -1 ? null : value.shotsPerPerson,
       visibilityAll: value.visibility === 1,
+      eventTypeId: value.eventTypeId,
     };
 
     const response = await eventsService.create(payload);
@@ -266,15 +296,23 @@ export default function CreateEventPage() {
     navigate(`/events/${encodeId(event.id)}`);
   }
 
-  const nameSuggestions = resolvedName
-    ? [
-        `${resolvedName}'s party`,
-        `${resolvedName}'s Birthday`,
-        `${resolvedName}'s Wedding day`,
-        "Our Anniversary",
-        "Our Little Party",
-      ]
-    : ["Our Anniversary", "Our Little Party"];
+  // Suggestions follow the kind of event just chosen — the step before this one has
+  // already been answered, so there is no reason to keep offering a wedding name to
+  // someone setting up a birthday.
+  const suggestionsByType = {
+    wedding: ["Our Wedding Day", `${resolvedName}'s Wedding day`, "Our Big Day"],
+    party: [`${resolvedName}'s party`, "Our Little Party", "The Afterparty"],
+    birthday: [`${resolvedName}'s Birthday`, "Birthday Bash", "Another Trip Around the Sun"],
+    travel: ["Our Trip", `${resolvedName}'s Adventure`, "The Road Trip"],
+  };
+
+  const nameSuggestions = (
+    suggestionsByType[selectedType?.code] || [
+      `${resolvedName}'s party`,
+      "Our Anniversary",
+      "Our Little Party",
+    ]
+  ).filter((suggestion) => resolvedName || !suggestion.startsWith("'s"));
 
   const nameStep = {
     title: "What's your name?",
@@ -291,8 +329,42 @@ export default function CreateEventPage() {
     ),
   };
 
+  const typeStep = {
+    title: "What kind of event is this?",
+    description:
+      "It shapes the name suggestions we offer and\nwhich printable cards your event comes with.",
+    validate: (v) =>
+      !v.eventTypeId
+        ? {
+            title: "Pick a kind first",
+            message:
+              "Choosing what kind of event this is lets us suggest a name and offer you the right cards to print for your guests.",
+          }
+        : null,
+    control: ({ value, onChange }) => (
+      <div className="grid grid-cols-2 gap-2.5 w-full">
+        {eventTypes.map((type) => {
+          const Icon = EVENT_TYPE_ICONS[type.code] || SparklesIcon;
+
+          return (
+            <OptionTile
+              key={type.id}
+              selected={value.eventTypeId === type.id}
+              onClick={() => onChange("eventTypeId", type.id)}
+              className="flex flex-col justify-between h-24 py-4"
+            >
+              <Icon size={18} />
+              <span className="text-[0.95rem]">{type.name}</span>
+            </OptionTile>
+          );
+        })}
+      </div>
+    ),
+  };
+
   const steps = [
     ...(needsNameStep ? [nameStep] : []),
+    typeStep,
     {
       title: "What is the name of your event?",
       description:

@@ -25,8 +25,9 @@ export const AuthProvider = ({ children }) => {
       const deviceResponse = await authService.deviceLogin(deviceId);
 
       if (deviceResponse.ok && deviceResponse.data.requiresSignIn) {
-        // This device has more than one linked account — we can't silently
-        // pick one, so force an explicit sign-in instead.
+        // This device can't be resolved to a single guest — either it carries a
+        // real account (which has credentials and must present them) or more than
+        // one guest. Either way, force an explicit sign-in.
         setOpen(true);
         setLoading(false);
         return;
