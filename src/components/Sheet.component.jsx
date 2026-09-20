@@ -22,21 +22,24 @@ export default function Sheet({
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-251" />
         <Drawer.Content
           className={cn(
-            "z-251 bg-background flex flex-col fixed bottom-0 left-0 right-0",
+            "z-251 bg-background flex flex-col fixed bottom-0 left-0 right-0 overflow-hidden",
             "max-h-[88vh] rounded-t-3xl outline-none",
             className,
           )}
         >
+          <div className="w-full bg-white py-2 fixed top-0">
+            <Drawer.Handle className="!bg-border !w-10 " />
+          </div>
           <div className="max-w-md w-full mx-auto overflow-y-auto px-5 pb-8 pt-3">
-            <Drawer.Handle className="!bg-border !w-10" />
-
             {onBack ? (
               <IconButton onClick={onBack} aria-label="Back" className="mt-5">
                 <ArrowLeftIcon size={18} />
               </IconButton>
             ) : null}
 
-            <Drawer.Title className={cn("font-serif text-3xl", onBack ? "mt-5" : "mt-7")}>
+            <Drawer.Title
+              className={cn("font-serif text-3xl", onBack ? "mt-5" : "mt-7")}
+            >
               {title}
             </Drawer.Title>
 

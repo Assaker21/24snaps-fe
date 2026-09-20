@@ -163,7 +163,10 @@ export default function AccountPage() {
 
     setSavingName(true);
     setError(null);
-    const response = await usersService.update(user.id, { firstName, lastName });
+    const response = await usersService.update(user.id, {
+      firstName,
+      lastName,
+    });
     setSavingName(false);
 
     if (!response.ok) {
@@ -191,7 +194,9 @@ export default function AccountPage() {
     if (!response.ok) {
       setDeleting(false);
       setConfirmingDelete(false);
-      setError(response.data?.message || "Couldn't close the account, try again.");
+      setError(
+        response.data?.message || "Couldn't close the account, try again.",
+      );
       return;
     }
 
@@ -263,7 +268,6 @@ export default function AccountPage() {
               {editingName ? (
                 <div className="flex flex-col gap-2.5 pb-2">
                   <Input
-                    autoFocus
                     value={name}
                     placeholder="Your name"
                     onChange={(e) => setName(e.target.value)}
@@ -330,7 +334,10 @@ export default function AccountPage() {
             <SectionLabel className="mt-9 mb-4">Payments</SectionLabel>
 
             {purchases === null ? (
-              <LoadingScreen variant="inline" message="Finding your receipts…" />
+              <LoadingScreen
+                variant="inline"
+                message="Finding your receipts…"
+              />
             ) : purchases.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-center bg-surface rounded-3xl">
                 <ReceiptIcon size={24} className="text-subtle" />

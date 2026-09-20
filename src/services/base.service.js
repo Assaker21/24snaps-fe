@@ -1,7 +1,7 @@
-import { DEVELOPMENT } from "../config/config.js";
+import { DEVELOPMENT, DEVELOPMENT_MOBILE_URL } from "../config/config.js";
 
 export const baseUrl = DEVELOPMENT
-  ? "http://localhost:2169"
+  ? DEVELOPMENT_MOBILE_URL || "http://localhost:2169"
   : "https://24snaps-api.charbxl.com";
 
 export default async function baseService(uri, options = {}) {

@@ -40,7 +40,10 @@ export default function DisplayNamePopup({ open, setOpen, user }) {
 
     setSaving(true);
     setError("");
-    const response = await usersService.update(user.id, { firstName, lastName });
+    const response = await usersService.update(user.id, {
+      firstName,
+      lastName,
+    });
     setSaving(false);
 
     if (!response.ok) {
@@ -61,7 +64,6 @@ export default function DisplayNamePopup({ open, setOpen, user }) {
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 pt-7">
         <Input
-          autoFocus
           icon={<UserIcon size={16} />}
           placeholder="Your name"
           autoComplete="name"

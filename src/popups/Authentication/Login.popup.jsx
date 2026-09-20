@@ -8,6 +8,16 @@ import authService from "../../services/auth.service.js";
 import DisplayNamePopup from "./DisplayName.popup";
 import { useAuth } from "../../contexts/Auth.context";
 
+// Google is sent this at the authorize step and must be sent the identical string
+// again when the backend exchanges the code, or the exchange fails with
+// `redirect_uri_mismatch` — so it is read once, here, and travels with the code.
+// Being the origin, it is also where Google lands us back with `?code=`, which means
+// it reads the same on the return trip as it did on the way out. Every origin the app
+// is signed into from (localhost, the tunnel host, production) has to be registered in
+// the Google console under *Authorized redirect URIs* and in the backend's
+// GOOGLE_REDIRECT_URIS.
+const GOOGLE_REDIRECT_URI = window.location.origin;
+
 const TITLES = {
   email: "Sign up to continue viewing your memories",
   password: "Enter your password",
@@ -54,7 +64,7 @@ export default function LoginPopup({ open, setOpen }) {
   const googleLogin = useGoogleLogin({
     flow: "auth-code",
     ux_mode: "redirect",
-    redirect_uri: window.location.origin,
+    redirect_uri: GOOGLE_REDIRECT_URI,
   });
 
   useEffect(() => {
@@ -90,7 +100,7 @@ export default function LoginPopup({ open, setOpen }) {
 
   async function submitGoogleCode(code) {
     const response = await authService.login({
-      google: { code },
+      google: { code, redirectUri: GOOGLE_REDIRECT_URI },
     });
 
     const { ok, user } = await completeAuth(response);
@@ -208,7 +218,6 @@ export default function LoginPopup({ open, setOpen }) {
                 type="email"
                 placeholder="Email"
                 autoComplete="email"
-                autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -240,7 +249,6 @@ export default function LoginPopup({ open, setOpen }) {
                 <Input
                   placeholder="First name"
                   autoComplete="given-name"
-                  autoFocus
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
@@ -261,7 +269,7 @@ export default function LoginPopup({ open, setOpen }) {
               autoComplete={
                 step === "register" ? "new-password" : "current-password"
               }
-              autoFocus={step === "password"}
+              // autoFocus={step === "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

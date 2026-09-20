@@ -5,7 +5,7 @@ import { AuthProvider } from "../contexts/Auth.context";
 
 export default function RootLayout() {
   return (
-    <GoogleOAuthProvider clientId="804363128118-vdjnu1ed3arera18bsssr13qbvug4opa.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId="39363694557-83n8mq8ed8sl8otsjn4if52j2a7qn6ec.apps.googleusercontent.com">
       <DeviceProvider>
         <AuthProvider>
           <Outlet />
