@@ -5,4 +5,11 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    allowedHosts: [
+      "local.sawwerna.com",
+      "souwarhelwe.charbxl.com",
+      "beta.sawwerna.com",
+    ],
+  },
 });

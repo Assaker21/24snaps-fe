@@ -300,9 +300,17 @@ export default function CreateEventPage() {
   // already been answered, so there is no reason to keep offering a wedding name to
   // someone setting up a birthday.
   const suggestionsByType = {
-    wedding: ["Our Wedding Day", `${resolvedName}'s Wedding day`, "Our Big Day"],
+    wedding: [
+      "Our Wedding Day",
+      `${resolvedName}'s Wedding day`,
+      "Our Big Day",
+    ],
     party: [`${resolvedName}'s party`, "Our Little Party", "The Afterparty"],
-    birthday: [`${resolvedName}'s Birthday`, "Birthday Bash", "Another Trip Around the Sun"],
+    birthday: [
+      `${resolvedName}'s Birthday`,
+      "Birthday Bash",
+      "Another Trip Around the Sun",
+    ],
     travel: ["Our Trip", `${resolvedName}'s Adventure`, "The Road Trip"],
   };
 
@@ -320,7 +328,6 @@ export default function CreateEventPage() {
       "We'll use this to greet you and personalize\nsuggestions for your event.",
     control: () => (
       <Input
-        autoFocus
         icon={<PencilIcon size={16} />}
         placeholder="Enter your name"
         value={guestName}
@@ -373,7 +380,6 @@ export default function CreateEventPage() {
         return (
           <div className="flex flex-col w-full pt-0.5">
             <Input
-              autoFocus
               icon={<PencilIcon size={16} />}
               placeholder="Name your event"
               value={value.name}
@@ -784,16 +790,16 @@ export default function CreateEventPage() {
         }
       />
 
-      <div className="w-full flex flex-col items-center px-6 mt-6 mb-9 shrink-0">
+      <div className="w-full flex flex-col items-center px-6 mt-6  shrink-0">
         <h1 className="font-serif text-3xl text-center max-w-[19rem]">
           {steps[step]?.title}
         </h1>
-        <p className="text-[0.95rem] text-muted-foreground text-center leading-snug mt-4 whitespace-pre-line">
-          {steps[step]?.description}
-        </p>
       </div>
 
       <div className="flex flex-col items-center justify-start flex-1 px-5 pb-6 overflow-y-auto">
+        <p className="text-[0.95rem] mb-9 text-muted-foreground text-center leading-snug mt-4 whitespace-pre-line">
+          {steps[step]?.description}
+        </p>
         {steps[step]?.control({
           value,
           onChange: (key, next) => setValue((v) => ({ ...v, [key]: next })),

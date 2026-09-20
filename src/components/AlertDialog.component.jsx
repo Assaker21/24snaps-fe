@@ -66,7 +66,6 @@ export default function AlertDialog({
               variant="secondary"
               onClick={onClose}
               disabled={busy}
-              autoFocus
               className="w-full justify-center"
             >
               {cancelLabel}
@@ -76,7 +75,6 @@ export default function AlertDialog({
           <Button
             variant="primary"
             onClick={onClose}
-            autoFocus
             className="w-full justify-center mt-6"
           >
             Got it

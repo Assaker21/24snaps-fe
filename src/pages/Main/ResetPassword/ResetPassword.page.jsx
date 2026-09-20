@@ -30,7 +30,9 @@ export default function ResetPasswordPage() {
     event.preventDefault();
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Your password needs at least ${MIN_PASSWORD_LENGTH} characters.`);
+      setError(
+        `Your password needs at least ${MIN_PASSWORD_LENGTH} characters.`,
+      );
       return;
     }
     if (password !== confirmation) {
@@ -68,8 +70,8 @@ export default function ResetPasswordPage() {
           <div className="flex flex-col items-start gap-4 bg-surface rounded-3xl p-6 mt-7">
             <p className="text-[0.95rem] text-muted-foreground leading-snug">
               This link is missing its reset code. Open the most recent
-              &ldquo;Reset your Sawwerna password&rdquo; email again, or ask for a
-              new link from your account page.
+              &ldquo;Reset your Sawwerna password&rdquo; email again, or ask for
+              a new link from your account page.
             </p>
             <Link to="/account">
               <Button variant="primary">Go to my account</Button>
@@ -104,7 +106,6 @@ export default function ResetPasswordPage() {
                 placeholder="New password"
                 autoComplete="new-password"
                 icon={<KeyRoundIcon size={16} />}
-                autoFocus
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
