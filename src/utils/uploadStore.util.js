@@ -9,10 +9,21 @@
 // IndexedDB rather than the localStorage the rest of the app uses, because this holds
 // Blobs — localStorage would mean base64, a ~33% size penalty and a 5MB ceiling that a
 // single full-resolution photo can blow through on its own.
+//
+// Every record carries the `userId` it was captured as. This browser is shared — a
+// guest session, then a sign-in, maybe a second account later — and a pending capture
+// belongs to exactly one of those people: it is their shot, it counts against their
+// frames, and its storage key is signed for their id and nobody else's. Reading the
+// store is therefore always scoped to one user (see queueFor below), so signing in as
+// someone else can neither upload nor see what the previous user left behind.
 
 const DB_NAME = "24snaps";
-const DB_VERSION = 1;
+// v2 adds the userId index. Records written by v1 have no userId at all; the queue
+// adopts those into whoever is signed in when it first sees them, since there was only
+// ever one user's worth of them.
+const DB_VERSION = 2;
 const STORE = "pendingUploads";
+const USER_INDEX = "userId";
 
 let dbPromise = null;
 
@@ -28,8 +39,13 @@ function openDb() {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE)) {
-        request.result.createObjectStore(STORE, { keyPath: "id" });
+      const db = request.result;
+      const store = db.objectStoreNames.contains(STORE)
+        ? request.transaction.objectStore(STORE)
+        : db.createObjectStore(STORE, { keyPath: "id" });
+
+      if (!store.indexNames.contains(USER_INDEX)) {
+        store.createIndex(USER_INDEX, "userId");
       }
     };
 
@@ -87,8 +103,39 @@ export function deleteCapture(id) {
   return tolerate(run("readwrite", (store) => store.delete(id)));
 }
 
-export function listCaptures() {
-  return tolerate(run("readonly", (store) => store.getAll())).then(
-    (records) => records || [],
+// One user's unfinished captures. The index does the scoping, so another account's
+// pending shots are never even read, let alone resumed.
+export function listCaptures(userId) {
+  if (userId == null) return Promise.resolve([]);
+
+  return tolerate(
+    run("readonly", (store) =>
+      store.index(USER_INDEX).getAll(IDBKeyRange.only(userId)),
+    ),
+  ).then((records) => records || []);
+}
+
+// Records with no owner: everything written before this store knew about users, plus
+// anything whose owner was lost. Only ever claimed deliberately, by the queue.
+export function listUnownedCaptures() {
+  return tolerate(run("readonly", (store) => store.getAll())).then((records) =>
+    (records || []).filter((record) => record.userId == null),
+  );
+}
+
+// Moves captures onto a different user — the one case being a guest whose account the
+// backend has just merged into a real one, so the shots are the same person's but now
+// answer to a new id. The storage key goes with the old owner: keys are signed per
+// uploader and the API refuses one that doesn't name the caller, so the bytes have to
+// go up again under a key the new owner owns.
+export function reassignCaptures(records, userId) {
+  if (!records.length) return Promise.resolve();
+
+  return tolerate(
+    run("readwrite", (store) => {
+      records.forEach((record) => {
+        store.put({ ...record, userId, storageKey: null });
+      });
+    }),
   );
 }

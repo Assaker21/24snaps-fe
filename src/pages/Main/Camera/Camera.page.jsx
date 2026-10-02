@@ -152,6 +152,7 @@ export default function CameraPage() {
   // Uploads that fail don't come through here at all: they stay in the queue (and in
   // browser storage) to be retried, and give their frame back in the meantime.
   const {
+    items: pendingUploads,
     outstandingCount,
     uploadingCount,
     failedCount,
@@ -577,6 +578,7 @@ export default function CameraPage() {
         onClose={() => setGalleryOpen(false)}
         event={event}
         attachments={attachments}
+        pending={pendingUploads}
         currentUserId={user?.id}
         canHide={Boolean(isCreator)}
         onToggleHidden={handleToggleHidden}

@@ -4,6 +4,7 @@ import { LinkIcon, DownloadIcon } from "lucide-react";
 import Button from "../../../../../components/Button.component";
 import Sheet from "../../../../../components/Sheet.component";
 import { encodeId } from "../../../../../utils/idCodec.util";
+import { saveBlob } from "../../../../../utils/download.util";
 
 export default function InviteSheet({ open, setOpen, event }) {
   const qrRef = useRef(null);
@@ -27,13 +28,7 @@ export default function InviteSheet({ open, setOpen, event }) {
 
     const serialized = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([serialized], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${event.name || "invite"}-qr.svg`;
-    link.click();
-    URL.revokeObjectURL(url);
+    saveBlob(blob, `${event.name || "invite"}-qr.svg`);
   }
 
   return (

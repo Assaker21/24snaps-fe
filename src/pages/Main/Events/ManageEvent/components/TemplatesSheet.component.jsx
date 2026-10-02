@@ -38,6 +38,39 @@ function toLabel(name) {
     .replace(/^./, (c) => c.toUpperCase());
 }
 
+// What a `date` field hands to <input type="date">, which only ever accepts
+// YYYY-MM-DD. Safari parses far fewer date strings than Chrome does, and
+// `toISOString` on the Invalid Date it returns *throws* — so a template whose stored
+// date isn't in a shape Safari recognises used to take the whole sheet down with it
+// rather than leaving one field blank.
+function toDateInputValue(value) {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  // Local parts, not toISOString: a date picked as the 3rd must not read back as the
+  // 2nd for anyone east of UTC.
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${parsed.getFullYear()}-${month}-${day}`;
+}
+
+// Safari only grew `<input type="color">` recently, and where it is missing the
+// element degrades silently to a plain text box showing a raw hex string — which is
+// what made this form look broken there. Probed once, since the answer can't change.
+const SUPPORTS_COLOR_INPUT = (() => {
+  if (typeof document === "undefined") return false;
+  const probe = document.createElement("input");
+  probe.setAttribute("type", "color");
+  return probe.type === "color";
+})();
+
+const DEFAULT_COLOR = "#2f2e29";
+
 // One input per declared field type. `image` is the only one that does any work — the
 // file goes to storage through the same presigned route photos use, and what lands in
 // the card's data is the resulting key.
@@ -56,7 +89,9 @@ function Field({ field, value, onChange, disabled, eventId }) {
           onChange={(e) => onChange(e.target.value)}
           className={cn(
             "w-full rounded-2xl bg-surface border border-input px-4 py-3",
-            "text-[0.95rem] leading-snug resize-none outline-none",
+            // 16px exactly: iOS Safari zooms the page in on any focused field
+            // smaller than that, and never zooms back out.
+            "text-base leading-snug resize-none outline-none",
             "focus:border-brand-border disabled:opacity-60",
           )}
         />
@@ -65,16 +100,52 @@ function Field({ field, value, onChange, disabled, eventId }) {
   }
 
   if (field.type === "color") {
+    const colour = value || DEFAULT_COLOR;
+
+    // Where the native picker exists, the swatch is ours and the input sits over it
+    // invisibly — so it looks the same in every browser instead of inheriting each
+    // one's take on a colour well. Where it doesn't, the hex is typed instead, with
+    // the swatch beside it standing in for the preview.
     return (
       <label className="flex flex-row items-center justify-between gap-4">
         <SectionLabel>{label}</SectionLabel>
-        <input
-          type="color"
-          disabled={disabled}
-          value={value || "#2f2e29"}
-          onChange={(e) => onChange(e.target.value)}
-          className="size-10 rounded-xl bg-surface border border-input cursor-pointer disabled:opacity-60"
-        />
+
+        {SUPPORTS_COLOR_INPUT ? (
+          <span
+            className={cn(
+              "relative size-10 shrink-0 rounded-xl border border-input overflow-hidden",
+              disabled ? "opacity-60" : "cursor-pointer",
+            )}
+            style={{ backgroundColor: colour }}
+          >
+            <input
+              type="color"
+              disabled={disabled}
+              value={colour}
+              onChange={(e) => onChange(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
+            />
+          </span>
+        ) : (
+          <span className="flex flex-row items-center gap-2.5 shrink-0">
+            <span
+              aria-hidden
+              className="size-10 shrink-0 rounded-xl border border-input"
+              style={{ backgroundColor: colour }}
+            />
+            <Input
+              type="text"
+              inputMode="text"
+              spellCheck={false}
+              autoCapitalize="none"
+              placeholder={DEFAULT_COLOR}
+              disabled={disabled}
+              value={value ?? ""}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-28 py-2.5 text-center font-mono"
+            />
+          </span>
+        )}
       </label>
     );
   }
@@ -102,15 +173,24 @@ function Field({ field, value, onChange, disabled, eventId }) {
               if (!file) return;
 
               setUploading(true);
-              // Same presigned route a photo takes, so the key carries the uploader's
-              // id — which is exactly what the server checks before drawing it.
-              const storageKey = await uploadFile(file, file.type, {
-                eventId,
-                type: "PICTURE",
-                fileName: file.name,
-              });
-              onChange(storageKey);
-              setUploading(false);
+              // uploadFile throws on a refusal or a rejected PUT, which used to leave
+              // this field reading "Uploading…" for the rest of the sheet's life.
+              try {
+                // Same presigned route a photo takes, so the key carries the
+                // uploader's id — exactly what the server checks before drawing it.
+                const storageKey = await uploadFile(file, file.type, {
+                  eventId,
+                  type: "PICTURE",
+                  fileName: file.name,
+                });
+                onChange(storageKey);
+              } catch (error) {
+                console.warn("Template image upload failed:", error);
+              } finally {
+                setUploading(false);
+                // So picking the same file again still fires a change event.
+                e.target.value = "";
+              }
             }}
           />
         </label>
@@ -125,9 +205,7 @@ function Field({ field, value, onChange, disabled, eventId }) {
         type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
         disabled={disabled}
         value={
-          field.type === "date" && value
-            ? new Date(value).toISOString().slice(0, 10)
-            : (value ?? "")
+          field.type === "date" ? toDateInputValue(value) : (value ?? "")
         }
         onChange={(e) => onChange(e.target.value)}
       />

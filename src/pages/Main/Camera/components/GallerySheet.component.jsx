@@ -12,6 +12,10 @@ export default function GallerySheet({
   onClose,
   event,
   attachments,
+  // Captures the upload queue is still working on. They are part of the roll from the
+  // user's point of view — the shutter already took them — so they are counted and
+  // shown here, not held back until the server confirms them.
+  pending = [],
   currentUserId,
   canHide = false,
   onToggleHidden,
@@ -38,6 +42,7 @@ export default function GallerySheet({
 
   if (!open) return null;
 
+  const momentCount = attachments.length + pending.length;
   const revealed = !event?.revealAt || new Date(event.revealAt) <= new Date();
 
   return (
@@ -48,8 +53,7 @@ export default function GallerySheet({
             {event?.name || "Your shots"}
           </span>
           <span className="text-sm text-muted-foreground">
-            {attachments.length}{" "}
-            {attachments.length === 1 ? "moment" : "moments"}
+            {momentCount} {momentCount === 1 ? "moment" : "moments"}
           </span>
         </div>
 
@@ -62,7 +66,7 @@ export default function GallerySheet({
           auto, so without it this column grows to fit every tile and overflow-y-auto
           never has anything to scroll. */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        {!revealed && attachments.length > 0 ? (
+        {!revealed && momentCount > 0 ? (
           <div className="flex justify-center mb-5">
             <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
               <ClockIcon size={13} />
@@ -77,7 +81,7 @@ export default function GallerySheet({
           </div>
         ) : null}
 
-        {attachments.length === 0 ? (
+        {momentCount === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <ImageIcon size={28} className="text-subtle" />
             <p className="text-sm text-subtle">No moments captured yet.</p>
@@ -85,6 +89,7 @@ export default function GallerySheet({
         ) : (
           <PhotoGrid
             attachments={attachments}
+            pending={pending}
             currentUserId={currentUserId}
             onOpen={setViewerIndex}
           />

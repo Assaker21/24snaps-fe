@@ -2,6 +2,67 @@
 @import url("https://fonts.cdnfonts.com/css/rosemartin");
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Beirut Text VF";
+  src: url("fonts/BeirutTextVF-Light.eot");
+  src:
+    local("Beirut Text VF Regular"),
+    local("BeirutTextVF-Light"),
+    url("fonts/BeirutTextVF-Light.eot?#iefix") format("embedded-opentype"),
+    url("fonts/BeirutTextVF-Light.woff2") format("woff2"),
+    url("fonts/BeirutTextVF-Light.woff") format("woff"),
+    url("fonts/BeirutTextVF-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beirut Display VF";
+  src: url("fonts/BeirutDisplayVF-LightItalic.eot");
+  src:
+    local("Beirut Display VF Italic"),
+    local("BeirutDisplayVF-LightItalic"),
+    url("fonts/BeirutDisplayVF-LightItalic.eot?#iefix")
+      format("embedded-opentype"),
+    url("fonts/BeirutDisplayVF-LightItalic.woff2") format("woff2"),
+    url("fonts/BeirutDisplayVF-LightItalic.woff") format("woff"),
+    url("fonts/BeirutDisplayVF-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beirut Text VF";
+  src: url("fonts/BeirutTextVF-LightItalic.eot");
+  src:
+    local("Beirut Text VF Italic"),
+    local("BeirutTextVF-LightItalic"),
+    url("fonts/BeirutTextVF-LightItalic.eot?#iefix") format("embedded-opentype"),
+    url("fonts/BeirutTextVF-LightItalic.woff2") format("woff2"),
+    url("fonts/BeirutTextVF-LightItalic.woff") format("woff"),
+    url("fonts/BeirutTextVF-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beirut Display VF";
+  src: url("fonts/BeirutDisplayVF-Light.eot");
+  src:
+    local("Beirut Display VF Regular"),
+    local("BeirutDisplayVF-Light"),
+    url("fonts/BeirutDisplayVF-Light.eot?#iefix") format("embedded-opentype"),
+    url("fonts/BeirutDisplayVF-Light.woff2") format("woff2"),
+    url("fonts/BeirutDisplayVF-Light.woff") format("woff"),
+    url("fonts/BeirutDisplayVF-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* The design reference in ../../UIUX is a black-background app. Every token below
    is that palette inverted onto white: the near-black page becomes white, the
    slightly-lifted dark card becomes a slightly-recessed light grey, and the white
@@ -11,7 +72,8 @@
    TimePicker reads `var(--background)` directly from an inline style. */
 @theme static {
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Rosemartin", "Playfair Display", ui-serif, Georgia, serif;
+  --font-serif:
+    "Rosemartin", "Beirut Text VF", "Playfair Display", ui-serif, Georgia, serif;
 
   /* Surfaces. `surface` is the mockups' #1c1c1e card, flipped. */
   --color-background: #ffffff;

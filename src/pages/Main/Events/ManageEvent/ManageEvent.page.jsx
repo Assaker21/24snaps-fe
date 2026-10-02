@@ -20,6 +20,7 @@ import PhotoViewer from "../../../../components/PhotoViewer.component";
 import TopBar from "../../../../components/TopBar.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import useTicker from "../../../../hooks/useTicker.hook";
+import useUploadQueue from "../../../../hooks/useUploadQueue.hook";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId, decodeId } from "../../../../utils/idCodec.util";
@@ -45,6 +46,18 @@ export default function ManageEventPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
+
+  // Shots this browser is still uploading — a capture taken on the camera page, or one
+  // resumed from a previous visit. They belong in the grid: the photo exists, it is
+  // only the server that doesn't have it yet. Each landing refreshes the payload, which
+  // is what swaps a pending tile for the real attachment.
+  const { items: pendingUploads } = useUploadQueue({
+    eventId,
+    onSuccess: () => {
+      eventsService.invalidate(eventId);
+      load();
+    },
+  });
 
   useEffect(() => {
     if (!authLoading) load();
@@ -137,7 +150,7 @@ export default function ManageEventPage() {
     event.peopleCount ?? (event.participants?.length ?? 0) + 1;
 
   const stats = [
-    { value: attachments.length, label: "Moments" },
+    { value: attachments.length + pendingUploads.length, label: "Moments" },
     { value: ended ? "Ended" : "Live", label: "Status" },
     { value: peopleCount, label: "People" },
   ];
@@ -297,13 +310,14 @@ export default function ManageEventPage() {
         </div>
       ) : null}
 
-      {attachments.length === 0 ? (
+      {attachments.length === 0 && pendingUploads.length === 0 ? (
         <p className="text-sm text-subtle text-center mt-12">
           No moments captured yet.
         </p>
       ) : (
         <PhotoGrid
           attachments={attachments}
+          pending={pendingUploads}
           currentUserId={user.id}
           onOpen={setViewerIndex}
           className="px-4 mt-5"

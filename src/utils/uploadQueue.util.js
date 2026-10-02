@@ -1,5 +1,11 @@
 import attachmentsService from "../services/attachments.service";
-import { saveCapture, deleteCapture, listCaptures } from "./uploadStore.util";
+import {
+  saveCapture,
+  deleteCapture,
+  listCaptures,
+  listUnownedCaptures,
+  reassignCaptures,
+} from "./uploadStore.util";
 import uploadFile from "./upload.util";
 
 // A module-level (not React-owned) FIFO for attachment uploads, so a capture keeps
@@ -10,14 +16,25 @@ import uploadFile from "./upload.util";
 //
 // Every capture is also written to IndexedDB on the way in and only deleted once the
 // server has the attachment (see uploadStore.util.js), so closing the tab mid-upload
-// postpones a shot rather than losing it — hydrate() picks it back up on the next load.
+// postpones a shot rather than losing it.
+//
+// Nothing uploads until an owner is set. A capture belongs to one account — it counts
+// against that account's frames, and the storage key it goes up to is signed for that
+// account's id — so the queue holds only the signed-in user's items and resumes only
+// their stored captures. `setOwner` (called from AuthProvider once the session is
+// resolved, and again on every change of user) is what starts and re-scopes it.
 
 const MAX_CONCURRENT = 2;
 const MAX_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 1500;
+// Who the queue last belonged to, so a sign-in can tell "the same person came back"
+// from "someone else is using this browser now" before any blob is touched.
+const OWNER_STORAGE_KEY = "pendingUploadsOwner";
 
 let items = [];
 let active = 0;
+// { id, guest } once known, null while the visitor has no resolved session at all.
+let owner = null;
 const listeners = new Set();
 
 function newId() {
@@ -32,9 +49,7 @@ function emit(event) {
 }
 
 function patch(id, changes) {
-  items = items.map((item) =>
-    item.id === id ? { ...item, ...changes } : item,
-  );
+  items = items.map((item) => (item.id === id ? { ...item, ...changes } : item));
 }
 
 function find(id) {
@@ -70,6 +85,7 @@ if (typeof window !== "undefined") {
 function persist(item) {
   return saveCapture({
     id: item.id,
+    userId: item.userId,
     blob: item.blob,
     contentType: item.contentType,
     eventId: item.eventId,
@@ -80,10 +96,16 @@ function persist(item) {
 }
 
 function pump() {
+  // No session resolved yet: an upload now would be attributed to nobody — or, worse,
+  // charged to whoever signs in next.
+  if (!owner) return;
+
   while (active < MAX_CONCURRENT) {
     const next = items.find(
       (item) =>
-        item.status === "pending" && (!item.readyAt || item.readyAt <= Date.now()),
+        item.status === "pending" &&
+        item.userId === owner.id &&
+        (!item.readyAt || item.readyAt <= Date.now()),
     );
     if (!next) return;
 
@@ -112,6 +134,10 @@ async function run(id) {
   // bookkeeping below must not be mistaken for a failed upload and retried.
   try {
     if (!storageKey) {
+      // A fresh presigned URL per attempt, which is also how a resumed capture
+      // recovers: the link the previous session was handed expires in five minutes, so
+      // a capture picked back up asks for a new one rather than PUTing to a dead
+      // signature.
       storageKey = await uploadFile(item.blob, item.contentType, {
         eventId: item.eventId,
         type: item.type,
@@ -145,7 +171,8 @@ async function run(id) {
     return;
   }
 
-  // Discarded mid-flight — nothing left to update.
+  // Discarded mid-flight, or the signed-in user changed under us — either way there is
+  // nothing left to update.
   if (!find(id)) {
     pump();
     return;
@@ -155,7 +182,13 @@ async function run(id) {
 
   if (attempts < MAX_ATTEMPTS) {
     const delay = RETRY_BASE_DELAY_MS * attempts;
-    patch(id, { status: "pending", attempts, storageKey, error, readyAt: Date.now() + delay });
+    patch(id, {
+      status: "pending",
+      attempts,
+      storageKey,
+      error,
+      readyAt: Date.now() + delay,
+    });
     emit();
     setTimeout(pump, delay);
   } else {
@@ -171,6 +204,7 @@ async function run(id) {
 function enqueue({ blob, contentType, eventId, type }) {
   const item = {
     id: newId(),
+    userId: owner?.id ?? null,
     blob,
     contentType: contentType || blob?.type || "image/jpeg",
     eventId,
@@ -191,13 +225,105 @@ function enqueue({ blob, contentType, eventId, type }) {
   return item.id;
 }
 
-// Reads back whatever the last session couldn't finish. Restored captures come back as
-// `pending` with a clean attempt count rather than as the failures they may have been:
-// the usual reason an upload runs out of attempts is a connection that a fresh session
-// is the best evidence yet of having recovered.
-async function hydrate() {
-  const records = await listCaptures();
+function readStoredOwner() {
+  try {
+    const raw = localStorage.getItem(OWNER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Only ever records a real owner. "No session right now" is a transient state — a
+// token that expired, a request that didn't land — and forgetting who this browser
+// belonged to would lose the one fact the guest-merge check below needs.
+function writeStoredOwner(next) {
+  if (!next) return;
+
+  try {
+    localStorage.setItem(OWNER_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Private mode, or storage full. The queue still works for this session.
+  }
+}
+
+// Tells the queue who is signed in: called from AuthProvider once the session is
+// resolved, and again whenever it changes — a sign-in, a sign-out, a different account.
+//
+// Switching users never uploads or deletes the previous user's captures: they leave
+// memory, stay in the store, and come back if that user signs in again.
+async function setOwner(next) {
+  const normalized =
+    next?.id != null ? { id: next.id, guest: !!next.guest } : null;
+
+  if (owner?.id === normalized?.id) {
+    // Same person — only their guest/registered standing can have changed, and the
+    // merge check below reads it, so keep it current.
+    if (normalized) {
+      owner = normalized;
+      writeStoredOwner(normalized);
+    }
+    return;
+  }
+
+  const previous = owner ?? readStoredOwner();
+  owner = normalized;
+  writeStoredOwner(normalized);
+
+  // Anything in memory belongs to whoever was signed in a moment ago, and goes with
+  // them. An upload already in flight can't be recalled, but dropping its item here
+  // makes `run` treat the result as discarded; the capture stays in the store either
+  // way, so nothing is lost — it is waiting for its owner to come back.
+  //
+  // Captures taken before any session resolved are the exception: they have no owner to
+  // return to, so the user now in front of us claims them, exactly as the store below
+  // claims their records. The storage key goes, since it was never signed for anyone.
+  const claimed = items
+    .filter((item) => item.userId == null || item.userId === normalized?.id)
+    .map((item) =>
+      normalized && item.userId == null
+        ? { ...item, userId: normalized.id, storageKey: null }
+        : item,
+    );
+
+  if (claimed.length !== items.length || claimed.some((item, i) => item !== items[i])) {
+    items = claimed;
+    emit();
+  }
+
+  if (!normalized) return;
+
+  // The one case where captures legitimately change hands: this device was a guest,
+  // that guest has just signed into an existing account, and the backend folded the
+  // guest's rows into it (users.js#mergeGuestInto). Their unfinished shots are the same
+  // person's, so they follow — minus the storage key, which named the old id.
+  if (previous?.guest && previous.id !== normalized.id) {
+    const orphans = await listCaptures(previous.id);
+    await reassignCaptures(orphans, normalized.id);
+  }
+
+  // Captures from before the store recorded an owner at all. There was only ever one
+  // user's worth of them, and this is the user in front of us.
+  const unowned = await listUnownedCaptures();
+  await reassignCaptures(unowned, normalized.id);
+
+  await hydrate(normalized.id);
+
+  // The owner is what gates `pump`, so this is the start signal: it covers items
+  // claimed above as well as anything the store had nothing new to add to.
+  pump();
+}
+
+// Reads back whatever the last session couldn't finish, for one user only. Restored
+// captures come back as `pending` with a clean attempt count rather than as the
+// failures they may have been: the usual reason an upload runs out of attempts is a
+// connection that a fresh session is the best evidence yet of having recovered.
+async function hydrate(userId) {
+  const records = await listCaptures(userId);
   if (!records.length) return;
+
+  // The user changed while this was reading — the answer is for the wrong person now.
+  if (owner?.id !== userId) return;
 
   const known = new Set(items.map((item) => item.id));
   const restored = records
@@ -205,6 +331,7 @@ async function hydrate() {
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
     .map((record) => ({
       ...record,
+      userId,
       status: "pending",
       attempts: 0,
       error: null,
@@ -264,9 +391,8 @@ function subscribe(listener) {
   return () => listeners.delete(listener);
 }
 
-if (typeof window !== "undefined") hydrate();
-
 export default {
+  setOwner,
   enqueue,
   retry,
   retryAllFailed,

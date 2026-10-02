@@ -11,6 +11,7 @@ import attachmentsService from "../services/attachments.service";
 import IconButton from "./IconButton.component";
 import Button from "./Button.component";
 import cn from "../utils/cn.util";
+import { downloadUrl } from "../utils/download.util";
 
 function extensionFromContentType(contentType) {
   return (contentType?.split("/")[1] || "jpg").split("+")[0];
@@ -75,18 +76,16 @@ export default function PhotoViewer({
     if (!fullSrc) return;
 
     setDownloading(true);
+    // download.util owns the saving itself: Safari needs the anchor attached to the
+    // document and the object URL left alive past the click, and ignores a download
+    // that doesn't do both. A CORS hiccup fetching the blob falls back to showing the
+    // image so the user can still save it by hand.
     try {
-      const blob = await fetch(fullSrc).then((r) => r.blob());
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `${fileNamePrefix}-${attachment.id}.${extensionFromContentType(blob.type)}`;
-      link.click();
-      URL.revokeObjectURL(objectUrl);
-    } catch {
-      // CORS/network hiccup fetching the blob — fall back to a plain navigation
-      // so the user can still save the image manually.
-      window.open(fullSrc, "_blank");
+      await downloadUrl(
+        fullSrc,
+        (blob) =>
+          `${fileNamePrefix}-${attachment.id}.${extensionFromContentType(blob.type)}`,
+      );
     } finally {
       setDownloading(false);
     }
