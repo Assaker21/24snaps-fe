@@ -1,0 +1,31 @@
+# Vite stamps a content hash into every file under /assets, so those can never
+# go stale — cache them hard. index.html must stay revalidated or a deploy
+# would keep serving the old bundle references.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=604800
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Icons, the social card and the hero are unhashed names that change only when the
+# brand does — a week of caching with revalidation after it.
+/*.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/*.jpg
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/*.webp
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/favicon.ico
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# Crawler files. Short enough that fixing a mistake in robots.txt takes effect the
+# same day, long enough that a crawl doesn't re-fetch them on every URL.
+/robots.txt
+  Cache-Control: public, max-age=3600
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+/site.webmanifest
+  Cache-Control: public, max-age=86400

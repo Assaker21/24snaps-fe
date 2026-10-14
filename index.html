@@ -2,12 +2,188 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Souwar Helwe</title>
+
+    <!-- This file is the only HTML a crawler or a social scraper is ever served:
+         the app is a client-rendered SPA, so everything below has to be true of the
+         landing page specifically. Per-route titles and descriptions are swapped in
+         afterwards by src/hooks/useSeo.hook.js, which Google honours (it renders the
+         page) and Facebook/WhatsApp do not (they read this file and stop) — so the
+         Open Graph card here describes the product, not whichever screen was
+         linked. -->
+    <title>Sawwerna — a disposable camera for your event</title>
+    <meta
+      name="description"
+      content="Hand your guests a disposable camera that lives in their browser. They join by QR — no app, no download — and the whole album reveals when the event ends."
+    />
+    <link rel="canonical" href="https://sawwerna.com/" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="author" content="Sawwerna" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <!-- Third-party origins the first paint depends on, and the webfonts themselves.
+         These used to be @import-ed from src/index.css, where the browser could not
+         discover them until that stylesheet had downloaded and parsed — a round trip
+         the text spent invisible. Requested here they go out with everything else. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.cdnfonts.com" />
+    <link rel="preconnect" href="https://api.sawwerna.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
+    />
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/rosemartin" />
+
+    <!-- Icons. Every size is generated from public/logo.png — see the note in
+         README.md on regenerating them. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="application-name" content="Sawwerna" />
+    <meta name="apple-mobile-web-app-title" content="Sawwerna" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Open Graph. Absolute URLs on purpose: a scraper has no page to resolve a
+         relative one against. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sawwerna" />
+    <meta property="og:url" content="https://sawwerna.com/" />
+    <meta
+      property="og:title"
+      content="Sawwerna — a disposable camera for your event"
+    />
+    <meta
+      property="og:description"
+      content="Hand your guests a disposable camera that lives in their browser. They join by QR — no app, no download — and the whole album reveals when the event ends."
+    />
+    <meta property="og:image" content="https://sawwerna.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Sawwerna — capture your day through everyone’s eyes."
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Sawwerna — a disposable camera for your event"
+    />
+    <meta
+      name="twitter:description"
+      content="Hand your guests a disposable camera that lives in their browser. They join by QR — no app, no download — and the whole album reveals when the event ends."
+    />
+    <meta name="twitter:image" content="https://sawwerna.com/og-image.jpg" />
+    <meta
+      name="twitter:image:alt"
+      content="Sawwerna — capture your day through everyone’s eyes."
+    />
+
+    <!-- The hero is the landing page's LCP element, and nothing in the bundle
+         references it until React has mounted. Preloading the exact `srcset`
+         candidate the browser would pick brings the paint forward by roughly a
+         round trip; the attributes must stay in step with Main.section.jsx. -->
+    <link
+      rel="preload"
+      as="image"
+      href="/hero-app.webp"
+      imagesrcset="/hero-app-800.webp 800w, /hero-app.webp 1600w"
+      imagesizes="(max-width: 800px) 115vw, 800px"
+      fetchpriority="high"
+    />
+
+    <!-- Structured data. One graph rather than three scripts so the nodes can
+         reference each other by @id — that is what tells Google the organisation
+         publishing the site and the one offering the app are the same entity. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://sawwerna.com/#organization",
+            "name": "Sawwerna",
+            "url": "https://sawwerna.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://sawwerna.com/logo.png",
+              "width": 782,
+              "height": 418
+            },
+            "sameAs": [
+              "https://www.instagram.com/sawwerna",
+              "https://www.facebook.com/sawwerna"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://sawwerna.com/#website",
+            "url": "https://sawwerna.com/",
+            "name": "Sawwerna",
+            "description": "A disposable camera for your event, in your guests’ browser.",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://sawwerna.com/#organization" }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://sawwerna.com/#app",
+            "name": "Sawwerna",
+            "url": "https://sawwerna.com/",
+            "applicationCategory": "MultimediaApplication",
+            "applicationSubCategory": "Photo sharing",
+            "operatingSystem": "Any — runs in a web browser",
+            "browserRequirements": "Requires JavaScript and a camera-capable browser.",
+            "inLanguage": "en",
+            "image": "https://sawwerna.com/og-image.jpg",
+            "screenshot": "https://sawwerna.com/hero-app.webp",
+            "description": "Create an event, share a QR code, and let every guest shoot photos from their own browser. The album stays private until the moment you choose to reveal it.",
+            "featureList": [
+              "Guests join by QR code with no app and no account",
+              "A set number of shots each, like a disposable camera",
+              "The album reveals at a time the host chooses",
+              "Private by default — the host controls who sees what",
+              "Printable invitation and thank-you cards"
+            ],
+            "publisher": { "@id": "https://sawwerna.com/#organization" },
+            "offers": {
+              "@type": "AggregateOffer",
+              "priceCurrency": "USD",
+              "lowPrice": "0",
+              "highPrice": "99.99",
+              "offerCount": 8,
+              "description": "Free for events up to 5 guests; priced per event by guest count beyond that."
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Google renders JavaScript before indexing; several other crawlers and every
+         link-preview bot do not. This is the only copy they will ever see, so it
+         states what the product is rather than apologising for the blank page. -->
+    <noscript>
+      <h1>Sawwerna — a disposable camera for your event</h1>
+      <p>
+        Sawwerna hands your guests a disposable camera that lives in their
+        browser. They join your wedding, party or trip by scanning a QR code —
+        no app, no download, no account — take their allotted shots, and the
+        whole album reveals at the moment you choose.
+      </p>
+      <p>
+        Sawwerna needs JavaScript to run. Please enable it, or open
+        <a href="https://sawwerna.com/">sawwerna.com</a> in another browser.
+      </p>
+    </noscript>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

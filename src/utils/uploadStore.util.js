@@ -17,7 +17,11 @@
 // store is therefore always scoped to one user (see queueFor below), so signing in as
 // someone else can neither upload nor see what the previous user left behind.
 
-const DB_NAME = "24snaps";
+// Renamed from "24snaps" with the rest of the app. A browser that still holds the
+// old database keeps it — nothing reads it any more, so anything that was mid-upload
+// at the moment of that deploy is stranded. There were few enough of those to accept
+// rather than write a migration for.
+const DB_NAME = "sawwerna";
 // v2 adds the userId index. Records written by v1 have no userId at all; the queue
 // adopts those into whoever is signed in when it first sees them, since there was only
 // ever one user's worth of them.

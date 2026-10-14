@@ -5,6 +5,7 @@ import Button from "../../../components/Button.component";
 import Input from "../../../components/Input.component";
 import TopBar from "../../../components/TopBar.component";
 import authService from "../../../services/auth.service";
+import useSeo from "../../../hooks/useSeo.hook";
 
 // Where the link in the reset password email lands. The token rides in the query
 // string (the backend minted it, signed, with an hour to live) and goes straight back
@@ -16,6 +17,8 @@ import authService from "../../../services/auth.service";
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function ResetPasswordPage() {
+  useSeo({ title: "Reset your password" });
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");

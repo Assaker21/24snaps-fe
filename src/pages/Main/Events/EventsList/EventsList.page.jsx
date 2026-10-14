@@ -11,6 +11,7 @@ import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId } from "../../../../utils/idCodec.util";
 import useEffectOnce from "../../../../hooks/useEffectOnce.hook";
 import AlbumRow from "./components/AlbumRow.component";
+import useSeo from "../../../../hooks/useSeo.hook";
 
 function EventRow({ event }) {
   // Falls back to the shipped default, so a row is never a blank grey square.
@@ -39,6 +40,8 @@ function EventRow({ event }) {
 }
 
 export default function EventsListPage() {
+  useSeo({ title: "Your events" });
+
   // Split at fetch time rather than during render — "has this event ended yet"
   // depends on the clock, which can't be read while rendering. Ended events are the
   // albums section.

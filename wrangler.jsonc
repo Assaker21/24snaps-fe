@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sawwerna",
+  "compatibility_date": "2026-10-03",
+
+  // Assets-only Worker: no `main` entrypoint, Cloudflare just serves ./dist.
+  // `single-page-application` is what makes deep links like /events/abc12
+  // fall through to index.html instead of 404ing.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+
+  "observability": {
+    "enabled": true,
+  },
+
+  // The canonical origin, and the one every canonical tag, Open Graph URL and
+  // sitemap entry in index.html names. www.sawwerna.com must redirect here (301,
+  // via a Cloudflare bulk redirect) rather than serve the same assets, or the two
+  // hostnames compete as duplicates of each other.
+  "routes": [{ "pattern": "sawwerna.com", "custom_domain": true }],
+}

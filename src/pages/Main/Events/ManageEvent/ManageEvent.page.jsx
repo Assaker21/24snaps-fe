@@ -28,6 +28,7 @@ import InviteSheet from "./components/InviteSheet.component";
 import ShareSheet from "./components/ShareSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
 import TemplatesSheet from "./components/TemplatesSheet.component";
+import useSeo from "../../../../hooks/useSeo.hook";
 
 export default function ManageEventPage() {
   const { eventId: encodedEventId } = useParams();
@@ -46,6 +47,8 @@ export default function ManageEventPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
+
+  useSeo({ title: event?.name || "Event" });
 
   // Shots this browser is still uploading — a capture taken on the camera page, or one
   // resumed from a previous visit. They belong in the grid: the photo exists, it is

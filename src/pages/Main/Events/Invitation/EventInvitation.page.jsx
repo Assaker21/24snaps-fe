@@ -17,6 +17,7 @@ import { encodeId, decodeId } from "../../../../utils/idCodec.util";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import cn from "../../../../utils/cn.util";
+import useSeo from "../../../../hooks/useSeo.hook";
 
 export default function EventInvitationPage() {
   const { eventId: encodedEventId } = useParams();
@@ -29,6 +30,10 @@ export default function EventInvitationPage() {
   const [name, setName] = useState("");
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState(null);
+
+  useSeo({
+    title: event?.name ? `You’re invited to ${event.name}` : "You’re invited",
+  });
 
   useEffect(() => {
     if (!authLoading) load();

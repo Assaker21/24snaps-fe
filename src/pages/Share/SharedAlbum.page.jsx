@@ -10,6 +10,7 @@ import SectionLabel from "../../components/SectionLabel.component";
 import { getCoverSrc } from "../../utils/cover.util";
 import { formatDateRange } from "../../utils/dateRange.util";
 import { decodeId } from "../../utils/idCodec.util";
+import useSeo from "../../hooks/useSeo.hook";
 
 // The published album. Deliberately outside the app's provider tree: no auth context,
 // no device id, no session of any kind — someone opening this link is a visitor, and
@@ -24,6 +25,8 @@ export default function SharedAlbumPage() {
   const [album, setAlbum] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewerIndex, setViewerIndex] = useState(null);
+
+  useSeo({ title: album?.event?.name || "Shared album" });
 
   useEffect(() => {
     let cancelled = false;
@@ -93,10 +96,10 @@ export default function SharedAlbumPage() {
       {/* Its own chrome rather than TopBar: that bar reads the auth context, and there
           isn't one here. A visitor gets the wordmark and an invitation of their own. */}
       <div className="w-full flex flex-row justify-between items-center gap-2 px-4 py-3 shrink-0 bg-background/90 backdrop-blur-md sticky top-0 z-200">
-        <Link to="/" aria-label="sawwerna home">
+        <Link to="/" aria-label="Sawwerna home">
           <img
             src="/logo.png"
-            alt="sawwerna"
+            alt="Sawwerna"
             className="size-14 -my-2 object-contain"
           />
         </Link>

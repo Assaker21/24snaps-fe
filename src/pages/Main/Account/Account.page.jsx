@@ -26,6 +26,7 @@ import { useAuth } from "../../../contexts/Auth.context";
 import useEffectOnce from "../../../hooks/useEffectOnce.hook";
 import { encodeId } from "../../../utils/idCodec.util";
 import cn from "../../../utils/cn.util";
+import useSeo from "../../../hooks/useSeo.hook";
 
 // The reference's settings line, reused here: icon + label on the left, the current
 // value on the right, and a chevron only when the row opens something.
@@ -125,6 +126,8 @@ function PurchaseRow({ purchase }) {
 }
 
 export default function AccountPage() {
+  useSeo({ title: "Account" });
+
   const { user, setUser, isGuest, loading: authLoading, setOpen } = useAuth();
   const navigate = useNavigate();
 

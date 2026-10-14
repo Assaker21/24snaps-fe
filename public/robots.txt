@@ -1,0 +1,16 @@
+# Only the landing page is public. Everything below /events, /account and /share is
+# either someone's private album or an app screen with nothing to rank for, so it is
+# kept out of the index entirely rather than crawled and then dropped.
+#
+# The meta robots tag set by src/hooks/useSeo.hook.js says the same thing a second
+# time, for any crawler that arrives at one of these URLs from a link rather than
+# from here.
+
+User-agent: *
+Disallow: /events
+Disallow: /account
+Disallow: /reset-password
+Disallow: /share/
+Allow: /
+
+Sitemap: https://sawwerna.com/sitemap.xml

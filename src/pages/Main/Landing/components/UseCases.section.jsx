@@ -39,11 +39,7 @@ export default function UseCasesSection() {
         ))}
       </div>
 
-      <img
-        src="https://framerusercontent.com/images/yE5qTYqfi86r0Wy4jK6SdnWI.png?scale-down-to=2048&width=2694&height=2888"
-        alt=""
-        className="w-[calc(100%-20px)] max-w-200"
-      />
+      <img src="main.webp" alt="" className="w-[calc(100%-20px)] max-w-200" />
     </div>
   );
 }

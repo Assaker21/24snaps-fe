@@ -5,22 +5,19 @@ const STEPS = [
     title: "Create an event",
     description:
       "Name your event, set how long it will stay open, and what kind of moment it's for.",
-    image:
-      "https://framerusercontent.com/images/nbJu7pbg8K44KjKnQE8Uw0AQh8.png?scale-down-to=1024&width=917&height=1251",
+    image: "what-should-we-call-this-event.png",
   },
   {
     title: "Invite your people",
     description:
       "Share your event link or QR code and invite friends to capture the day with you.",
-    image:
-      "https://framerusercontent.com/images/Wpb8D1YohQ6vf39qDAsiIw52iA.png?scale-down-to=1024&width=917&height=1251",
+    image: "share-with-qr.png",
   },
   {
     title: "Capture Together",
     description:
       "Take photos throughout the day, every shot fills your shared album.",
-    image:
-      "https://framerusercontent.com/images/YmMNMwkowrw0xd36ao8AhiT4QI.png?scale-down-to=1024&width=1076&height=1251",
+    image: "camera-1.png",
   },
 ];
 

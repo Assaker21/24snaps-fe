@@ -19,22 +19,14 @@ export default function CallToActionSection() {
       </Link>
 
       <img
-        src="https://framerusercontent.com/images/kIelIN6AxscJt8f3pUY5zYOdo.png?scale-down-to=2048&width=1383&height=2853"
+        src="call-to-action-1.png"
         alt=""
         className="rotate-12 mt-10 mb-8 max-w-100 block md:hidden"
       />
 
       <div className="flex-row gap-3 hidden md:flex">
-        <img
-          src="https://framerusercontent.com/images/4aAjYc6CalXwF0WkSeLOW5UsM.png?width=1473&height=1862"
-          alt=""
-          className="mt-10 mb-8 w-full"
-        />
-        <img
-          src="https://framerusercontent.com/images/KKVOFA2ckloq0lpKglfy1UtTk6w.png?width=1480&height=1832"
-          alt=""
-          className="mt-10 mb-8 w-full"
-        />
+        <img src="call-to-action-1.png" alt="" className="mt-10 mb-8 w-full" />
+        <img src="call-to-action-1.png" alt="" className="mt-10 mb-8 w-full" />
       </div>
     </div>
   );

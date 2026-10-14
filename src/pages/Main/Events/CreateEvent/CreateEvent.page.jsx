@@ -41,6 +41,7 @@ import { encodeId } from "../../../../utils/idCodec.util";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import { DEFAULT_COVER_SRC } from "../../../../utils/cover.util";
+import useSeo from "../../../../hooks/useSeo.hook";
 
 const PARTICIPANT_PLANS = [
   { id: 1, number: 5, price: 0 },
@@ -182,6 +183,8 @@ function firstProblem(stepsToCheck, value) {
 }
 
 export default function CreateEventPage() {
+  useSeo({ title: "Create an event" });
+
   const { user, setUser, isGuest, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
   const [eventTypes, setEventTypes] = useState([]);

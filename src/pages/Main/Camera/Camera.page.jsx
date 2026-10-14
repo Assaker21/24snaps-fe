@@ -20,6 +20,7 @@ import { formatCountdown } from "../../../utils/countdown.util";
 import cn from "../../../utils/cn.util";
 import InviteSheet from "../Events/ManageEvent/components/InviteSheet.component";
 import GallerySheet from "./components/GallerySheet.component";
+import useSeo from "../../../hooks/useSeo.hook";
 
 function touchDistance(touches) {
   const [a, b] = touches;
@@ -107,6 +108,8 @@ function BarButton({ children, className, ...props }) {
 }
 
 export default function CameraPage() {
+  useSeo({ title: "Camera" });
+
   const { eventId: encodedEventId } = useParams();
   const eventId = decodeId(encodedEventId);
   const navigate = useNavigate();

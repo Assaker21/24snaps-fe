@@ -21,10 +21,10 @@ export default function TopBar({ left, actions, className }) {
         {left}
         {/* The mark is a black-on-white wordmark, so it drops straight onto the
             light theme — scaled up to eat its own generous file padding. */}
-        <Link to="/" aria-label="sawwerna home">
+        <Link to="/" aria-label="Sawwerna home">
           <img
             src="/logo.jpg"
-            alt="sawwerna"
+            alt="Sawwerna"
             className="w-18 -my-2 object-contain"
           />
         </Link>
