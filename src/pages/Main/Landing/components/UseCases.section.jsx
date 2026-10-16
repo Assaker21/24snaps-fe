@@ -39,7 +39,11 @@ export default function UseCasesSection() {
         ))}
       </div>
 
-      <img src="main.webp" alt="" className="w-[calc(100%-20px)] max-w-200" />
+      <img
+        src="uncached-main.webp"
+        alt=""
+        className="w-[calc(100%-20px)] max-w-200"
+      />
     </div>
   );
 }

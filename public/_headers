@@ -13,13 +13,13 @@
 # Icons, the social card and the hero are unhashed names that change only when the
 # brand does — a week of caching with revalidation after it.
 /*.png
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=60, stale-while-revalidate=60
 /*.jpg
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=60, stale-while-revalidate=60
 /*.webp
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=60, stale-while-revalidate=60
 /favicon.ico
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=60, stale-while-revalidate=60
 
 # Crawler files. Short enough that fixing a mistake in robots.txt takes effect the
 # same day, long enough that a crawl doesn't re-fetch them on every URL.

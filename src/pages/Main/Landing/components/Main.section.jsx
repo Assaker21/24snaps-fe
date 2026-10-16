@@ -32,8 +32,8 @@ export default function MainSection() {
           two candidates — keep the srcset and sizes here in step with it. The
           intrinsic dimensions are what stop the heading jumping when it lands. */}
       <img
-        src="/hero-app.webp"
-        srcSet="/hero-app-800.webp 800w, /hero-app.webp 1600w"
+        src="/uncached-hero-app.webp"
+        srcSet="/uncached-hero-app-800.webp 800w, /uncached-hero-app.webp 1600w"
         sizes="(max-width: 800px) 115vw, 800px"
         width={1600}
         height={1716}

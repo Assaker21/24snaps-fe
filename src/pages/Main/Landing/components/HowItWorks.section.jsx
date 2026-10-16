@@ -5,19 +5,19 @@ const STEPS = [
     title: "Create an event",
     description:
       "Name your event, set how long it will stay open, and what kind of moment it's for.",
-    image: "what-should-we-call-this-event.png",
+    image: "uncached-what-should-we-call-this-event.png",
   },
   {
     title: "Invite your people",
     description:
       "Share your event link or QR code and invite friends to capture the day with you.",
-    image: "share-with-qr.png",
+    image: "uncached-share-with-qr.png",
   },
   {
     title: "Capture Together",
     description:
       "Take photos throughout the day, every shot fills your shared album.",
-    image: "camera-1.png",
+    image: "uncached-camera-1.png",
   },
 ];
 

@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sawwerna",
-  "compatibility_date": "2026-10-03",
+  "compatibility_date": "2026-10-16",
 
   // Assets-only Worker: no `main` entrypoint, Cloudflare just serves ./dist.
   // `single-page-application` is what makes deep links like /events/abc12
@@ -9,6 +9,14 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
+  },
+
+  // ISOLATE IMAGE & ASSET CACHE PER DEPLOYMENT
+  // Setting cross_version_cache to false ensures that updated images with the
+  // same filename are aggressively updated at the edge on your next deployment.
+  "cache": {
+    "enabled": true,
+    "cross_version_cache": false,
   },
 
   "observability": {
