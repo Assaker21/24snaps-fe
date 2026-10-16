@@ -42,17 +42,12 @@ import { useAuth } from "../../../../contexts/Auth.context";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import { DEFAULT_COVER_SRC } from "../../../../utils/cover.util";
 import useSeo from "../../../../hooks/useSeo.hook";
-
-const PARTICIPANT_PLANS = [
-  { id: 1, number: 5, price: 0 },
-  { id: 2, number: 10, price: 1.99 },
-  { id: 3, number: 25, price: 4.99 },
-  { id: 4, number: 50, price: 14.99 },
-  { id: 5, number: 100, price: 29.99 },
-  { id: 6, number: 150, price: 49.99 },
-  { id: 7, number: 200, price: 69.99 },
-  { id: 8, number: -1, price: 99.99 },
-];
+import PaymentSheet from "../../../../components/PaymentSheet.component";
+import {
+  PARTICIPANT_PLANS,
+  computePrice,
+  withUnlimitedShots,
+} from "../../../../utils/pricing.util";
 
 // One glyph per kind of event, keyed by the code the catalogue ships. A type the
 // backend adds later still renders — it just falls back to the generic sparkle rather
@@ -182,10 +177,24 @@ function firstProblem(stepsToCheck, value) {
   return null;
 }
 
+// The wizard only mounts once the session is known, which is what makes `needsNameStep`
+// below safe to latch. Keeping the gate out here rather than returning early from the
+// wizard matters: a hook can't be told to re-initialise, so the wizard must not exist
+// until there is a real answer to initialise from.
 export default function CreateEventPage() {
   useSeo({ title: "Create an event" });
 
-  const { user, setUser, isGuest, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return <LoadingScreen message="Loading your camera bag…" />;
+  }
+
+  return <CreateEventWizard />;
+}
+
+function CreateEventWizard() {
+  const { user, setUser, isGuest } = useAuth();
   const [step, setStep] = useState(0);
   const [eventTypes, setEventTypes] = useState([]);
   const [value, setValue] = useState({
@@ -202,9 +211,17 @@ export default function CreateEventPage() {
   const [error, setError] = useState(null);
   const [alert, setAlert] = useState(null);
   const [guestName, setGuestName] = useState("");
+  const [payOpen, setPayOpen] = useState(false);
   const navigate = useNavigate();
 
-  const needsNameStep = isGuest && !user?.firstName;
+  // Latched at mount, never recomputed. Answering this step writes a `firstName` to
+  // the account — and signing in mid-wizard gives it an email — either of which makes
+  // `isGuest && !firstName` false, which used to drop this step straight out of the
+  // `steps` array. Every later step then shifted down one index, so pressing Next from
+  // the name step landed on the step *after* the event-type one: the wizard appeared to
+  // skip asking what kind of event it was, but only for the guests who were asked
+  // their name first.
+  const [needsNameStep] = useState(() => isGuest && !user?.firstName);
   const resolvedName = user?.firstName || guestName.trim();
 
   // The kinds of event are catalogue data, not a constant — which cards a host is
@@ -228,6 +245,14 @@ export default function CreateEventPage() {
       );
     return v.endAt;
   }
+
+  // What the event will cost, from the same tier table the server charges from. A free
+  // event never sees a payment method, so this is also what decides whether the sheet
+  // opens at all.
+  const price = computePrice({
+    planId: value.planId,
+    shotsPerPerson: value.shotsPerPerson,
+  });
 
   async function handleCreate() {
     setSubmitting(true);
@@ -264,30 +289,36 @@ export default function CreateEventPage() {
     const event = response.data;
 
     if (value.coverFile) {
-      const storageKey = await uploadFile(
-        value.coverFile,
-        value.coverFile.type,
-        {
-          eventId: event.id,
+      // A cover that won't upload is not worth losing the event over — it can be set
+      // from the event's own settings afterwards.
+      try {
+        const storageKey = await uploadFile(
+          value.coverFile,
+          value.coverFile.type,
+          {
+            eventId: event.id,
+            type: "PICTURE",
+            isCover: true,
+            fileName: value.coverFile.name,
+          },
+        );
+        // Deliberately not tagged with eventId: the cover shouldn't count
+        // against the creator's shot limit or appear in the reveal-gated grid,
+        // it's only linked in via event.mainAttachmentId below.
+        const attachmentResponse = await attachmentsService.create({
+          storageKey,
           type: "PICTURE",
+          // Tells the backend to generate the single 1600px cover version instead of
+          // the thumb/blur set, and keeps it out of the reveal gate.
           isCover: true,
-          fileName: value.coverFile.name,
-        },
-      );
-      // Deliberately not tagged with eventId: the cover shouldn't count
-      // against the creator's shot limit or appear in the reveal-gated grid,
-      // it's only linked in via event.mainAttachmentId below.
-      const attachmentResponse = await attachmentsService.create({
-        storageKey,
-        type: "PICTURE",
-        // Tells the backend to generate the single 1600px cover version instead of
-        // the thumb/blur set, and keeps it out of the reveal gate.
-        isCover: true,
-      });
-      if (attachmentResponse.ok) {
-        await eventsService.update(event.id, {
-          mainAttachmentId: attachmentResponse.data.id,
         });
+        if (attachmentResponse.ok) {
+          await eventsService.update(event.id, {
+            mainAttachmentId: attachmentResponse.data.id,
+          });
+        }
+      } catch (uploadError) {
+        console.warn("Cover upload failed:", uploadError);
       }
     }
 
@@ -296,6 +327,10 @@ export default function CreateEventPage() {
       return;
     }
 
+    // The event exists but checkout couldn't be started — the provider was
+    // unreachable, or its credentials are wrong. The event's own screen offers the
+    // retry, so send them there rather than stranding them on a wizard whose work is
+    // already saved.
     navigate(`/events/${encodeId(event.id)}`);
   }
 
@@ -615,7 +650,7 @@ export default function CreateEventPage() {
         if (unlimitedShots) {
           plans = plans.map((plan) => ({
             ...plan,
-            price: !plan.price ? 1.99 : Math.floor(plan.price * 2) + 0.99,
+            price: withUnlimitedShots(plan.price),
           }));
         }
         const selectedPlan = plans.find((p) => p.id == value.planId);
@@ -711,22 +746,27 @@ export default function CreateEventPage() {
 
             <div className="border-t border-border mt-7 pt-6">
               <SectionLabel>Visibility permissions</SectionLabel>
+              {/* The caption used to be a <label for="visibility">, which never did
+                  anything: a label can only point at a form control, and the toggle is
+                  a button. It is a button of its own now, so tapping the sentence
+                  flips the switch the way it looks like it should. */}
               <div className="flex flex-row items-center gap-4 mt-4">
                 <Toggle
-                  id="visibility"
-                  name="visibility"
                   checked={value.visibility === 1}
                   onChange={(next) => onChange("visibility", !next ? 2 : 1)}
-                  label="Only the host can see all photos"
+                  label="Everyone can see all photos"
                 />
-                <label
-                  for="visibility"
-                  className="text-[0.95rem] text-muted-foreground"
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange("visibility", value.visibility === 1 ? 2 : 1)
+                  }
+                  className="text-[0.95rem] text-muted-foreground text-left cursor-pointer"
                 >
                   {value.visibility === 1
                     ? "Everyone can see all photos."
                     : "Only host can see all photos."}
-                </label>
+                </button>
               </div>
             </div>
           </div>
@@ -737,10 +777,6 @@ export default function CreateEventPage() {
 
   const onNameStep = needsNameStep && step === 0;
   const isLastStep = step >= steps.length - 1;
-
-  if (authLoading) {
-    return <LoadingScreen message="Loading your camera bag…" />;
-  }
 
   return (
     <form
@@ -759,7 +795,15 @@ export default function CreateEventPage() {
         }
 
         if (isLastStep) {
-          if (!submitting) handleCreate();
+          if (submitting) return;
+          // A paid event names its payment method before anything is created, so the
+          // host sees what they are about to be charged and on what — rather than
+          // being handed straight to a provider's page they never chose.
+          if (price > 0) {
+            setPayOpen(true);
+            return;
+          }
+          handleCreate();
           return;
         }
 
@@ -863,6 +907,16 @@ export default function CreateEventPage() {
         onClose={() => setAlert(null)}
         title={alert?.title}
         message={alert?.message}
+      />
+
+      <PaymentSheet
+        open={payOpen}
+        setOpen={setPayOpen}
+        price={price}
+        busy={submitting}
+        error={error}
+        confirmLabel="Create & pay"
+        onConfirm={handleCreate}
       />
 
       {submitting ? (

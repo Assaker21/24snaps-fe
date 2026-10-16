@@ -53,9 +53,22 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
   const [name, setName] = useState(event.name || "");
   const [savingCover, setSavingCover] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(null);
 
+  // The API refuses some of what this sheet can ask for — a finish time before the
+  // event opened, a reveal before that. Those answers used to be dropped on the floor:
+  // the editor closed and the row went on showing the old value, so the host was told
+  // their change had saved when it hadn't.
   async function saveField(data) {
-    await eventsService.update(event.id, data);
+    setError(null);
+
+    const response = await eventsService.update(event.id, data);
+
+    if (!response.ok) {
+      setError(response.data?.message || "That change couldn't be saved.");
+      return;
+    }
+
     setEditing(null);
     onUpdated?.();
   }
@@ -63,31 +76,64 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
   async function handleCoverChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setSavingCover(true);
-    const storageKey = await uploadFile(file, file.type, {
-      eventId: event.id,
-      type: "PICTURE",
-      isCover: true,
-      fileName: file.name,
-    });
-    const attachmentResponse = await attachmentsService.create({
-      storageKey,
-      type: "PICTURE",
-      isCover: true,
-    });
-    if (attachmentResponse.ok) {
-      await eventsService.update(event.id, {
+    setError(null);
+
+    // uploadFile throws on a refused presign or a rejected PUT, which used to leave
+    // this button reading "Uploading…" for the rest of the sheet's life.
+    try {
+      const storageKey = await uploadFile(file, file.type, {
+        eventId: event.id,
+        type: "PICTURE",
+        isCover: true,
+        fileName: file.name,
+      });
+      const attachmentResponse = await attachmentsService.create({
+        storageKey,
+        type: "PICTURE",
+        isCover: true,
+      });
+
+      if (!attachmentResponse.ok) {
+        throw new Error(attachmentResponse.data?.message || "Upload refused");
+      }
+
+      const updateResponse = await eventsService.update(event.id, {
         mainAttachmentId: attachmentResponse.data.id,
       });
+
+      if (!updateResponse.ok) {
+        throw new Error(updateResponse.data?.message || "Couldn't set the cover");
+      }
+
       onUpdated?.();
+    } catch (uploadError) {
+      console.warn("Cover upload failed:", uploadError);
+      setError(uploadError.message || "That cover couldn't be uploaded.");
+    } finally {
+      setSavingCover(false);
+      // So picking the same file again still fires a change event.
+      e.target.value = "";
     }
-    setSavingCover(false);
   }
 
   async function handleDelete() {
     if (!confirm(`Delete "${event.name}"? This can't be undone.`)) return;
+
     setDeleting(true);
-    await eventsService.remove(event.id);
+    setError(null);
+
+    const response = await eventsService.remove(event.id);
+
+    // Leaving for the events list on a refusal told the host their album was gone
+    // while it was still there — and the list it sent them to would still show it.
+    if (!response.ok) {
+      setError(response.data?.message || "That event couldn't be deleted.");
+      setDeleting(false);
+      return;
+    }
+
     navigate("/events");
   }
 
@@ -248,6 +294,10 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
           <TrashIcon size={16} />
           {deleting ? "Deleting…" : "Delete"}
         </button>
+
+        {error ? (
+          <p className="text-sm text-danger text-center mt-1">{error}</p>
+        ) : null}
       </div>
     </Sheet>
   );

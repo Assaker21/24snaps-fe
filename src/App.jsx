@@ -10,6 +10,7 @@ import EventsListPage from "./pages/Main/Events/EventsList/EventsList.page";
 import CameraPage from "./pages/Main/Camera/Camera.page";
 import AccountPage from "./pages/Main/Account/Account.page";
 import ResetPasswordPage from "./pages/Main/ResetPassword/ResetPassword.page";
+import PaymentReturnPage from "./pages/Main/Payments/PaymentReturn.page";
 import SharedAlbumPage from "./pages/Share/SharedAlbum.page";
 
 const router = createBrowserRouter([
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
           // the visitor is signed out but still gets a guest session, so the top bar
           // and the sign-in popup behave exactly as they do everywhere else.
           { path: "reset-password", element: <ResetPasswordPage /> },
+          // Where Whish sends the payer's browser back to. It takes a purchase id
+          // rather than an event one, because the event's URL code comes from a
+          // client-only codec the server can't produce.
+          { path: "payments/return", element: <PaymentReturnPage /> },
           { path: "events", element: <EventsListPage /> },
           { path: "events/create", element: <CreateEventPage /> },
           {

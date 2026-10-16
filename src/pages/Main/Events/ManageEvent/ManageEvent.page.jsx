@@ -18,12 +18,13 @@ import LoadingScreen from "../../../../components/LoadingScreen.component";
 import PhotoGrid from "../../../../components/PhotoGrid.component";
 import PhotoViewer from "../../../../components/PhotoViewer.component";
 import TopBar from "../../../../components/TopBar.component";
+import PaymentSheet from "../../../../components/PaymentSheet.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import useTicker from "../../../../hooks/useTicker.hook";
 import useUploadQueue from "../../../../hooks/useUploadQueue.hook";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import { getCoverSrc } from "../../../../utils/cover.util";
-import { encodeId, decodeId } from "../../../../utils/idCodec.util";
+import { encodeId, tryDecodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import ShareSheet from "./components/ShareSheet.component";
 import SettingsSheet from "./components/SettingsSheet.component";
@@ -32,7 +33,7 @@ import useSeo from "../../../../hooks/useSeo.hook";
 
 export default function ManageEventPage() {
   const { eventId: encodedEventId } = useParams();
-  const eventId = decodeId(encodedEventId);
+  const eventId = tryDecodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   // So the Camera button closes itself the moment the event finishes.
@@ -47,6 +48,9 @@ export default function ManageEventPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
+  const [payOpen, setPayOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState(null);
 
   useSeo({ title: event?.name || "Event" });
 
@@ -73,6 +77,14 @@ export default function ManageEventPage() {
   // it is the answer "you haven't joined yet", and the invitation page is where that
   // gets resolved.
   async function load() {
+    // The URL didn't carry a readable event code — a truncated or mistyped link. There
+    // is nothing to ask the API about, so go straight to the not-found state below.
+    if (eventId == null) {
+      setEvent(null);
+      setLoading(false);
+      return;
+    }
+
     const response = await eventsService.getSingle(eventId);
 
     if (response.status === 403) {
@@ -84,13 +96,35 @@ export default function ManageEventPage() {
     setLoading(false);
   }
 
-  async function handleCheckoutRetry() {
+  // Starting the payment is one request: the server either hands back a hosted
+  // checkout URL, or says the event is already paid for — which is the answer when a
+  // previous attempt went through and its callback never arrived.
+  async function handleCheckout() {
+    setPaying(true);
+    setPayError(null);
+
     const response = await eventsService.checkout(eventId);
+
     if (response.ok && response.data.checkoutUrl) {
       window.location.href = response.data.checkoutUrl;
-    } else {
-      load();
+      return;
     }
+
+    setPaying(false);
+
+    if (!response.ok) {
+      setPayError(
+        response.data?.message ||
+          "We couldn't reach the payment provider. Try again in a moment.",
+      );
+      return;
+    }
+
+    // Paid, or free — either way there is nothing left to pay and the screen behind
+    // this sheet is now wrong.
+    setPayOpen(false);
+    eventsService.invalidate(eventId);
+    load();
   }
 
   const isCreator = event && user && event.creatorId === user.id;
@@ -131,12 +165,29 @@ export default function ManageEventPage() {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
         <h1 className="font-serif text-3xl">Almost there</h1>
-        <p className="text-sm text-muted-foreground">
-          Complete payment to activate "{event.name}".
+        <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+          Complete payment to activate "{event.name}". Guests can't join or take a
+          single shot until you do.
         </p>
-        <Button variant="primary" onClick={handleCheckoutRetry}>
+        <Button variant="primary" onClick={() => setPayOpen(true)}>
           Complete payment
         </Button>
+
+        {payError && !payOpen ? (
+          <p className="text-sm text-danger max-w-xs">{payError}</p>
+        ) : null}
+
+        <PaymentSheet
+          open={payOpen}
+          setOpen={(next) => {
+            setPayOpen(next);
+            if (!next) setPayError(null);
+          }}
+          price={event.price}
+          busy={paying}
+          error={payError}
+          onConfirm={handleCheckout}
+        />
       </div>
     );
   }

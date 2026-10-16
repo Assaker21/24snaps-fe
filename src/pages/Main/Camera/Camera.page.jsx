@@ -15,7 +15,7 @@ import useUploadQueue from "../../../hooks/useUploadQueue.hook";
 import useViewportHeight from "../../../hooks/useViewportHeight.hook";
 import useTicker from "../../../hooks/useTicker.hook";
 import { useAuth } from "../../../contexts/Auth.context";
-import { encodeId, decodeId } from "../../../utils/idCodec.util";
+import { encodeId, tryDecodeId } from "../../../utils/idCodec.util";
 import { formatCountdown } from "../../../utils/countdown.util";
 import cn from "../../../utils/cn.util";
 import InviteSheet from "../Events/ManageEvent/components/InviteSheet.component";
@@ -111,7 +111,7 @@ export default function CameraPage() {
   useSeo({ title: "Camera" });
 
   const { eventId: encodedEventId } = useParams();
-  const eventId = decodeId(encodedEventId);
+  const eventId = tryDecodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const viewportHeight = useViewportHeight();
@@ -187,6 +187,13 @@ export default function CameraPage() {
   // One request: the event payload already carries its attachments with presigned URLs,
   // which covers the shot counter, the last-shot thumbnail and the gallery alike.
   async function load() {
+    // No readable event code in the URL — a mistyped or truncated link. A camera with
+    // nothing to shoot into would refuse every frame, so don't open one.
+    if (eventId == null) {
+      navigate("/events", { replace: true });
+      return;
+    }
+
     const response = await eventsService.getSingle(eventId);
 
     // Reaching the camera without having joined — a shared link, usually. Every shot

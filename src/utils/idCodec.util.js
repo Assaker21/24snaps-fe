@@ -130,3 +130,17 @@ export function decodeId(code) {
   const id = classOffset(length) + indexInClass;
   return Number(id);
 }
+
+// `decodeId` for a code that came from outside the app — a route param, which is
+// whatever was in the address bar. An invite link that got truncated or mistyped on its
+// way through a chat app is a bad code, not a bug, and throwing during render took the
+// whole app down to the error boundary for it. The screens that read a route param use
+// this and treat `null` as "no such event", which is what the visitor actually needs
+// to be told.
+export function tryDecodeId(code) {
+  try {
+    return decodeId(code);
+  } catch {
+    return null;
+  }
+}

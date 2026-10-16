@@ -13,7 +13,7 @@ import Button from "../../../../components/Button.component";
 import Input from "../../../../components/Input.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
 import { useAuth } from "../../../../contexts/Auth.context";
-import { encodeId, decodeId } from "../../../../utils/idCodec.util";
+import { encodeId, tryDecodeId } from "../../../../utils/idCodec.util";
 import { formatCountdown } from "../../../../utils/countdown.util";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import cn from "../../../../utils/cn.util";
@@ -21,7 +21,7 @@ import useSeo from "../../../../hooks/useSeo.hook";
 
 export default function EventInvitationPage() {
   const { eventId: encodedEventId } = useParams();
-  const eventId = decodeId(encodedEventId);
+  const eventId = tryDecodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, setUser, loading: authLoading } = useAuth();
 
@@ -42,6 +42,15 @@ export default function EventInvitationPage() {
   // The invitation endpoint is the only one that describes an event to someone who
   // isn't in it — the full payload is 403 until you have joined.
   async function load() {
+    // An invite link that got truncated or mistyped on its way through a chat app has
+    // no readable event code in it. Nothing to look up — say so rather than asking the
+    // API about an id we don't have.
+    if (eventId == null) {
+      setEvent(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const response = await eventsService.getInvitation(eventId);
     setEvent(response.ok ? response.data : null);
