@@ -13,6 +13,13 @@ export default function Toggle({
     <button
       type="button"
       role="switch"
+      // Deliberately pinned LTR. The knob is positioned by the flex row's start edge
+      // and moved with `translate-x-5`, which is a physical transform — under `dir=rtl`
+      // the track flipped but the transform didn't, so switching "on" drove the knob
+      // out of the pill instead of across it. A switch isn't text: off-left/on-right
+      // reads the same in both directions, so the fix is to stop it inheriting the
+      // direction at all rather than to mirror the travel.
+      dir="ltr"
       aria-checked={!!checked}
       aria-label={label}
       onClick={(e) => {

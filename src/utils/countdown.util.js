@@ -1,3 +1,7 @@
+// Superseded by src/i18n/format.js, which takes the app's resolved locale instead
+// of reading the browser's. Kept only so an older import doesn't break; delete once
+// nothing references it.
+
 export function formatCountdown(targetDate) {
   if (!targetDate) return "";
 

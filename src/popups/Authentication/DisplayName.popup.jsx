@@ -5,6 +5,7 @@ import Input from "../../components/Input.component";
 import Sheet from "../../components/Sheet.component";
 import usersService from "../../services/users.service";
 import { useAuth } from "../../contexts/Auth.context";
+import { useT } from "../../contexts/I18n.context";
 
 // Google hands back whatever name sits on the account, which is often a legal name
 // nobody at the party would recognise — and it goes straight onto every event the
@@ -12,6 +13,7 @@ import { useAuth } from "../../contexts/Auth.context";
 // brand new Google account is asked to confirm it once, pre-filled, and never again.
 export default function DisplayNamePopup({ open, setOpen, user }) {
   const { setUser } = useAuth();
+  const t = useT();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -47,7 +49,7 @@ export default function DisplayNamePopup({ open, setOpen, user }) {
     setSaving(false);
 
     if (!response.ok) {
-      setError(response.data?.message || "Couldn't save that name, try again.");
+      setError(response.data?.message || t("auth.displayName.error"));
       return;
     }
 
@@ -59,13 +61,13 @@ export default function DisplayNamePopup({ open, setOpen, user }) {
     <Sheet
       open={open}
       setOpen={setOpen}
-      title="What should we call you?"
-      description="This is the name your guests see on the events you host. You can change it later from your account."
+      title={t("auth.displayName.title")}
+      description={t("auth.displayName.body")}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 pt-7">
         <Input
           icon={<UserIcon size={16} />}
-          placeholder="Your name"
+          placeholder={t("auth.displayName.placeholder")}
           autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -80,7 +82,7 @@ export default function DisplayNamePopup({ open, setOpen, user }) {
           disabled={saving || !name.trim()}
           className="w-full justify-center"
         >
-          {saving ? "Saving…" : "That's me"}
+          {saving ? t("common.saving") : t("auth.displayName.confirm")}
         </Button>
       </form>
     </Sheet>

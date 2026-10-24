@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import attachmentsService from "../../../../../services/attachments.service";
 import cn from "../../../../../utils/cn.util";
-import { formatDateRange } from "../../../../../utils/dateRange.util";
+import { useT } from "../../../../../contexts/I18n.context";
+import useFormat from "../../../../../hooks/useFormat.hook";
 import { encodeId } from "../../../../../utils/idCodec.util";
 
 // How many tiles the strip lays out. The API sends at most this many rows on
@@ -26,6 +27,8 @@ function tileSrc(attachment) {
 // One finished event: serif title and its date span on one line, then the first few
 // photos taken. `me.jpeg` — the design's ALBUMS section.
 export default function AlbumRow({ event }) {
+  const t = useT();
+  const fmt = useFormat();
   const previews = (event.previewAttachments || []).slice(0, TILE_COUNT);
   const total = event.attachments?.length ?? 0;
   // Only what the strip couldn't fit. The count is the API's own visible total, so it
@@ -36,19 +39,19 @@ export default function AlbumRow({ event }) {
     <Link to={`/events/${encodeId(event.id)}`} className="group block">
       <div className="flex flex-row items-baseline gap-3">
         <h3 className="font-serif text-2xl truncate min-w-0">
-          {event.name || "Untitled event"}
+          {event.name || t("common.untitledEvent")}
         </h3>
-        <span className="ml-auto shrink-0 text-sm text-muted-foreground">
-          {formatDateRange(event.startAt, event.endAt)}
+        <span className="ms-auto shrink-0 text-sm text-muted-foreground">
+          {fmt.dateRange(event.startAt, event.endAt)}
         </span>
       </div>
 
       {previews.length === 0 ? (
         <div className="mt-3.5 h-24 rounded-2xl bg-surface flex items-center justify-center">
-          <span className="text-sm text-subtle">No photos in this album</span>
+          <span className="text-sm text-subtle">{t("events.emptyAlbum")}</span>
         </div>
       ) : (
-        <div className="mt-3.5 flex flex-row items-center -mr-9">
+        <div className="mt-3.5 flex flex-row items-center -me-9">
           {previews.map((attachment, index) => (
             <div
               key={attachment.id}
@@ -59,7 +62,7 @@ export default function AlbumRow({ event }) {
                 "relative w-1/4 shrink-0 aspect-[3/4] rounded-2xl overflow-hidden",
                 "bg-surface ring-1 ring-black/5 shadow-[0_8px_20px_rgba(0,0,0,0.12)]",
                 "transition-transform duration-300 group-hover:-translate-y-0.5",
-                index > 0 && "-ml-3",
+                index > 0 && "-ms-3",
               )}
             >
               <img

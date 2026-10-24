@@ -1,4 +1,5 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { I18nProvider } from "./contexts/I18n.context";
 import ErrorLayout from "./layouts/Error.layout";
 import MainLayout from "./layouts/Main.layout";
 import RootLayout from "./layouts/Root.layout";
@@ -61,5 +62,13 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  // Around the router rather than inside RootLayout: /share/:shareId is a sibling
+  // route outside the app's provider tree, and a stranger opening a shared album is
+  // exactly the visitor whose language we most want to get right. The error layouts
+  // sit under it for the same reason.
+  return (
+    <I18nProvider>
+      <RouterProvider router={router} />
+    </I18nProvider>
+  );
 }

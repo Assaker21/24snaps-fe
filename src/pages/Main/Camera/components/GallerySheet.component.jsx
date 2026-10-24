@@ -3,6 +3,8 @@ import { ClockIcon, ImageIcon, XIcon } from "lucide-react";
 import PhotoGrid from "../../../../components/PhotoGrid.component";
 import PhotoViewer from "../../../../components/PhotoViewer.component";
 import IconButton from "../../../../components/IconButton.component";
+import { useT } from "../../../../contexts/I18n.context";
+import useFormat from "../../../../hooks/useFormat.hook";
 
 // The camera's roll, shown over the viewfinder rather than by navigating away — the
 // point of tapping the thumbnail is to glance at what you've shot and get straight back
@@ -20,6 +22,8 @@ export default function GallerySheet({
   canHide = false,
   onToggleHidden,
 }) {
+  const t = useT();
+  const fmt = useFormat();
   const [viewerIndex, setViewerIndex] = useState(null);
 
   // Reopening the roll should land on the grid, not on whatever photo was last
@@ -50,14 +54,14 @@ export default function GallerySheet({
       <div className="flex flex-row items-center justify-between gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 shrink-0 border-b border-border">
         <div className="flex flex-col min-w-0">
           <span className="font-serif text-2xl truncate">
-            {event?.name || "Your shots"}
+            {event?.name || t("camera.yourShots")}
           </span>
           <span className="text-sm text-muted-foreground">
-            {momentCount} {momentCount === 1 ? "moment" : "moments"}
+            {t("events.momentCount", { count: momentCount })}
           </span>
         </div>
 
-        <IconButton onClick={close} aria-label="Back to camera">
+        <IconButton onClick={close} aria-label={t("camera.backToCamera")}>
           <XIcon size={18} />
         </IconButton>
       </div>
@@ -70,12 +74,8 @@ export default function GallerySheet({
           <div className="flex justify-center mb-5">
             <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
               <ClockIcon size={13} />
-              Everyone sees these on{" "}
-              {new Date(event.revealAt).toLocaleString([], {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
+              {t("camera.everyoneSeesOn", {
+                moment: fmt.moment(event.revealAt),
               })}
             </span>
           </div>
@@ -84,7 +84,7 @@ export default function GallerySheet({
         {momentCount === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <ImageIcon size={28} className="text-subtle" />
-            <p className="text-sm text-subtle">No moments captured yet.</p>
+            <p className="text-sm text-subtle">{t("event.noMoments")}</p>
           </div>
         ) : (
           <PhotoGrid

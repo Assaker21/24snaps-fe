@@ -3,10 +3,12 @@ import QRCode from "react-qr-code";
 import { LinkIcon, DownloadIcon } from "lucide-react";
 import Button from "../../../../../components/Button.component";
 import Sheet from "../../../../../components/Sheet.component";
+import { useT } from "../../../../../contexts/I18n.context";
 import { encodeId } from "../../../../../utils/idCodec.util";
 import { saveBlob } from "../../../../../utils/download.util";
 
 export default function InviteSheet({ open, setOpen, event }) {
+  const t = useT();
   const qrRef = useRef(null);
   const inviteUrl = `${window.location.origin}/events/invitation/${encodeId(event.id)}`;
 
@@ -35,8 +37,8 @@ export default function InviteSheet({ open, setOpen, event }) {
     <Sheet
       open={open}
       setOpen={setOpen}
-      title="Invite guests to your event."
-      description="Take a glimpse of your world through their lens. Invite your guests to make this event unforgettable."
+      title={t("invite.title")}
+      description={t("invite.body")}
     >
       <div className="border-t border-border mt-6 pt-8">
         <div ref={qrRef} className="flex flex-row items-center justify-center">
@@ -49,11 +51,11 @@ export default function InviteSheet({ open, setOpen, event }) {
       <div className="flex flex-row gap-2.5 justify-center mt-8">
         <Button variant="secondary" onClick={handleShareLink}>
           <LinkIcon size={16} />
-          Share Link
+          {t("invite.shareLink")}
         </Button>
         <Button variant="secondary" onClick={handleSaveQr}>
           <DownloadIcon size={16} />
-          Save QR image
+          {t("invite.saveQr")}
         </Button>
       </div>
     </Sheet>

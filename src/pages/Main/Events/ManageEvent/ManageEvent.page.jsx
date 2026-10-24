@@ -22,8 +22,10 @@ import PaymentSheet from "../../../../components/PaymentSheet.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import useTicker from "../../../../hooks/useTicker.hook";
 import useUploadQueue from "../../../../hooks/useUploadQueue.hook";
-import { formatCountdown } from "../../../../utils/countdown.util";
+import { useT } from "../../../../contexts/I18n.context";
+import useFormat from "../../../../hooks/useFormat.hook";
 import { getCoverSrc } from "../../../../utils/cover.util";
+import cn from "../../../../utils/cn.util";
 import { encodeId, tryDecodeId } from "../../../../utils/idCodec.util";
 import InviteSheet from "./components/InviteSheet.component";
 import ShareSheet from "./components/ShareSheet.component";
@@ -36,6 +38,8 @@ export default function ManageEventPage() {
   const eventId = tryDecodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const t = useT();
+  const fmt = useFormat();
   // So the Camera button closes itself the moment the event finishes.
   const now = useTicker();
 
@@ -52,7 +56,7 @@ export default function ManageEventPage() {
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState(null);
 
-  useSeo({ title: event?.name || "Event" });
+  useSeo({ title: event?.name || t("event.pageTitle") });
 
   // Shots this browser is still uploading — a capture taken on the camera page, or one
   // resumed from a previous visit. They belong in the grid: the photo exists, it is
@@ -113,10 +117,7 @@ export default function ManageEventPage() {
     setPaying(false);
 
     if (!response.ok) {
-      setPayError(
-        response.data?.message ||
-          "We couldn't reach the payment provider. Try again in a moment.",
-      );
+      setPayError(response.data?.message || t("pay.unreachable"));
       return;
     }
 
@@ -144,18 +145,18 @@ export default function ManageEventPage() {
   }
 
   if (authLoading || loading || !user) {
-    return <LoadingScreen message="Developing your photos…" />;
+    return <LoadingScreen message={t("event.loading")} />;
   }
 
   if (!event) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
-        <h1 className="font-serif text-3xl">Nothing here</h1>
+        <h1 className="font-serif text-3xl">{t("event.notFound.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          This event doesn't exist or was deleted.
+          {t("event.notFound.body")}
         </p>
         <Link to="/events">
-          <Button variant="primary">Back to events</Button>
+          <Button variant="primary">{t("event.notFound.back")}</Button>
         </Link>
       </div>
     );
@@ -164,13 +165,12 @@ export default function ManageEventPage() {
   if (isCreator && !event.paidAt) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
-        <h1 className="font-serif text-3xl">Almost there</h1>
+        <h1 className="font-serif text-3xl">{t("pay.almostThere")}</h1>
         <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-          Complete payment to activate "{event.name}". Guests can't join or take a
-          single shot until you do.
+          {t("pay.completeBody", { name: event.name })}
         </p>
         <Button variant="primary" onClick={() => setPayOpen(true)}>
-          Complete payment
+          {t("pay.complete")}
         </Button>
 
         {payError && !payOpen ? (
@@ -204,45 +204,75 @@ export default function ManageEventPage() {
     event.peopleCount ?? (event.participants?.length ?? 0) + 1;
 
   const stats = [
-    { value: attachments.length + pendingUploads.length, label: "Moments" },
-    { value: ended ? "Ended" : "Live", label: "Status" },
-    { value: peopleCount, label: "People" },
+    {
+      value: attachments.length + pendingUploads.length,
+      label: t("event.stats.moments"),
+    },
+    {
+      value: ended ? t("countdown.ended") : t("event.status.live"),
+      label: t("event.stats.status"),
+    },
+    { value: peopleCount, label: t("event.stats.people") },
   ];
 
   return (
     <div className="min-h-dvh flex flex-col bg-background pb-12">
-      <TopBar
-        left={
-          <IconButton
-            onClick={() => navigate("/events")}
-            aria-label="Back to events"
-          >
-            <ArrowLeftIcon size={18} />
-          </IconButton>
-        }
-        actions={
-          isCreator ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <SettingsIcon size={16} />
-              Settings
-            </Button>
-          ) : null
-        }
-      />
-
       {/* Cover hero. The title and stats sit on the photo itself, so they keep the
-          reference's white-on-image treatment even in the light theme. */}
-      <div
-        className="relative w-full min-h-[24rem] bg-surface-strong bg-cover bg-center shrink-0"
-        style={{ backgroundImage: `url(${coverSrc})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25" />
+          reference's white-on-image treatment even in the light theme.
 
-        <div className="absolute inset-x-0 bottom-0 px-5 pt-16 pb-6 flex flex-col items-center text-center text-white">
+          The bar is laid over this block rather than stacked above it, which is what
+          lets the cover run all the way to the top of the screen. That costs the bar
+          its own background — it is sitting on a photo now — so it carries a white
+          scrim instead: opaque under the wordmark and the pills, fading out below
+          them. Fixed rather than sticky, because a sticky bar still takes up a row in
+          the flow and would push the cover back down. */}
+      <div className="relative w-full min-h-[40rem] shrink-0">
+        {/* Deliberately shorter than the block holding it. The title and stats are
+            anchored to the bottom of the parent, so the extra height is what lets
+            them finish on the page's own white instead of entirely over the photo —
+            still overlapping it, just by less. */}
+        <div
+          className="absolute inset-x-0 top-0 h-[36rem] bg-surface-strong bg-cover bg-center"
+          style={{ backgroundImage: `url(${coverSrc})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-white/100 via-white/10 to-white/0" />
+        </div>
+
+        <TopBar
+          className={cn(
+            "fixed inset-x-0 top-0 bg-transparent backdrop-blur-none",
+            // The scrim has to outlast the row it protects, so the bar is padded
+            // well past its contents and the gradient fades out inside that padding.
+            "bg-gradient-to-b from-white/15 via-white/15 to-transparent pb-10",
+            // That padding is also dead space lying over the page, and a fixed box
+            // swallows clicks whether or not you can see it. Only the two real
+            // clusters — the back button with the wordmark, and the pills — take the
+            // pointer back.
+            "pointer-events-none [&>*]:pointer-events-auto",
+          )}
+          left={
+            <IconButton
+              onClick={() => navigate("/events")}
+              aria-label={t("event.backToEvents")}
+            >
+              <ArrowLeftIcon size={18} />
+            </IconButton>
+          }
+          actions={
+            isCreator ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <SettingsIcon size={16} />
+                {t("event.settings")}
+              </Button>
+            ) : null
+          }
+        />
+
+        <div className="absolute inset-x-0 bottom-0 px-5 pt-16 pb-5 flex flex-col items-center text-center text-black">
           <h1 className="font-serif text-4xl">{event.name}</h1>
 
           <div className="flex flex-row items-start justify-between w-full max-w-sm mt-5">
@@ -252,7 +282,7 @@ export default function ManageEventPage() {
                 className="flex flex-col items-center flex-1"
               >
                 <span className="font-serif italic text-2xl">{stat.value}</span>
-                <span className="text-xs mt-0.5 text-white/75">
+                <span className="text-xs mt-0.5 text-black/75">
                   {stat.label}
                 </span>
               </div>
@@ -265,11 +295,11 @@ export default function ManageEventPage() {
         <div className="flex flex-row items-center gap-4 text-sm text-muted-foreground">
           <span className="flex flex-row items-center gap-1.5">
             <ClockIcon size={14} />
-            {formatCountdown(event.endAt) || "Ended"}
+            {fmt.countdown(event.endAt) || t("countdown.ended")}
           </span>
           <span className="flex flex-row items-center gap-1.5">
             <UserRoundIcon size={14} />
-            {peopleCount} joined
+            {t("event.joinedCount", { count: peopleCount })}
           </span>
         </div>
 
@@ -287,7 +317,7 @@ export default function ManageEventPage() {
                 className="justify-center"
               >
                 <Share2Icon size={16} />
-                Share event
+                {t("event.shareEvent")}
               </Button>
             ) : (
               <Button
@@ -297,7 +327,7 @@ export default function ManageEventPage() {
                 className="justify-center"
               >
                 <QrCodeIcon size={16} />
-                Invite
+                {t("event.invite")}
               </Button>
             ))}
 
@@ -312,7 +342,7 @@ export default function ManageEventPage() {
               className="justify-center"
             >
               <LayoutTemplateIcon size={16} />
-              Templates
+              {t("event.templates")}
             </Button>
           ) : null}
 
@@ -326,7 +356,7 @@ export default function ManageEventPage() {
               className="flex-1 justify-center"
             >
               <CameraIcon size={16} />
-              Event ended
+              {t("event.ended")}
             </Button>
           ) : (
             <Link to={`/events/${encodeId(eventId)}/camera`} className="flex-1">
@@ -336,7 +366,7 @@ export default function ManageEventPage() {
                 className="w-full justify-center"
               >
                 <CameraIcon size={16} />
-                Camera
+                {t("event.camera")}
               </Button>
             </Link>
           )}
@@ -351,22 +381,18 @@ export default function ManageEventPage() {
         <div className="flex justify-center mt-5">
           <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
             <ClockIcon size={13} />
-            Reveals on{" "}
-            {event.revealAt
-              ? new Date(event.revealAt).toLocaleString([], {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
-              : "soon"}
+            {t("event.revealsOn", {
+              moment: event.revealAt
+                ? fmt.moment(event.revealAt)
+                : t("event.revealsSoon"),
+            })}
           </span>
         </div>
       ) : null}
 
       {attachments.length === 0 && pendingUploads.length === 0 ? (
         <p className="text-sm text-subtle text-center mt-12">
-          No moments captured yet.
+          {t("event.noMoments")}
         </p>
       ) : (
         <PhotoGrid
@@ -400,7 +426,7 @@ export default function ManageEventPage() {
           onIndexChange={setViewerIndex}
           onClose={() => setViewerIndex(null)}
           currentUserId={user.id}
-          fileNamePrefix={event.name || "moment"}
+          fileNamePrefix={event.name || t("event.momentFileName")}
           canHide={isCreator}
           onToggleHidden={handleToggleHidden}
         />

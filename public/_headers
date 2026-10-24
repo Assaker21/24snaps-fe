@@ -20,6 +20,8 @@
   Cache-Control: public, max-age=60, stale-while-revalidate=60
 /favicon.ico
   Cache-Control: public, max-age=60, stale-while-revalidate=60
+/favicon.svg
+  Cache-Control: public, max-age=60, stale-while-revalidate=60
 
 # Crawler files. Short enough that fixing a mistake in robots.txt takes effect the
 # same day, long enough that a crawl doesn't re-fetch them on every URL.

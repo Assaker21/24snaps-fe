@@ -21,6 +21,8 @@ import TopBar from "../../../components/TopBar.component";
 import usersService from "../../../services/users.service";
 import authService from "../../../services/auth.service";
 import paymentsService from "../../../services/payments.service";
+import { useT } from "../../../contexts/I18n.context";
+import useFormat from "../../../hooks/useFormat.hook";
 import eventsService from "../../../services/events.service";
 import { useAuth } from "../../../contexts/Auth.context";
 import useEffectOnce from "../../../hooks/useEffectOnce.hook";
@@ -65,26 +67,13 @@ const STATUS_TONES = {
   failed: "bg-danger-soft text-danger",
 };
 
-function formatAmount(purchase) {
-  const amount = Number(purchase.amount || 0);
-  return `${purchase.currency || "USD"} ${amount.toFixed(2)}`;
-}
-
-function formatDate(date) {
-  return date
-    ? new Date(date).toLocaleDateString([], {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "—";
-}
-
 // One line of payment history. A purchase outlives the event it paid for (it's the
 // only model with no soft delete), so a deleted event still gets a legible row.
 function PurchaseRow({ purchase }) {
+  const t = useT();
+  const fmt = useFormat();
   const status = purchase.status || "pending";
-  const eventName = purchase.event?.name || "Deleted event";
+  const eventName = purchase.event?.name || t("account.deletedEvent");
   const eventGone = !purchase.event || Boolean(purchase.event.deletedAt);
 
   const heading =
@@ -104,13 +93,14 @@ function PurchaseRow({ purchase }) {
       <div className="flex flex-col min-w-0">
         {heading}
         <span className="text-xs text-muted-foreground mt-1">
-          {formatDate(purchase.createdAt)} · {purchase.provider || "whish"}
+          {purchase.createdAt ? fmt.day(purchase.createdAt) : "—"} ·{" "}
+          {purchase.provider || "whish"}
         </span>
       </div>
 
       <div className="flex flex-col items-end gap-1.5 shrink-0">
         <span className="text-[0.95rem] font-medium">
-          {formatAmount(purchase)}
+          {fmt.money(purchase.amount, purchase.currency || "USD")}
         </span>
         <span
           className={cn(
@@ -118,7 +108,7 @@ function PurchaseRow({ purchase }) {
             STATUS_TONES[status] || STATUS_TONES.pending,
           )}
         >
-          {status}
+          {t(`account.status.${status}`)}
         </span>
       </div>
     </div>
@@ -126,7 +116,9 @@ function PurchaseRow({ purchase }) {
 }
 
 export default function AccountPage() {
-  useSeo({ title: "Account" });
+  const t = useT();
+  const fmt = useFormat();
+  useSeo({ title: t("account.title") });
 
   const { user, setUser, isGuest, loading: authLoading, setOpen } = useAuth();
   const navigate = useNavigate();
@@ -148,10 +140,11 @@ export default function AccountPage() {
   }
 
   const displayName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Unnamed";
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    t("account.unnamed");
 
   function startEditingName() {
-    setName(displayName === "Unnamed" ? "" : displayName);
+    setName(displayName === t("account.unnamed") ? "" : displayName);
     setEditingName(true);
   }
 
@@ -173,7 +166,7 @@ export default function AccountPage() {
     setSavingName(false);
 
     if (!response.ok) {
-      setError(response.data?.message || "Couldn't save that name, try again.");
+      setError(response.data?.message || t("auth.displayName.error"));
       return;
     }
 
@@ -186,7 +179,7 @@ export default function AccountPage() {
     const response = await authService.forgotPassword(user.email);
     setResetState(response.ok ? "sent" : "idle");
     if (!response.ok) {
-      setError(response.data?.message || "Couldn't send that link, try again.");
+      setError(response.data?.message || t("account.resetError"));
     }
   }
 
@@ -198,7 +191,7 @@ export default function AccountPage() {
       setDeleting(false);
       setConfirmingDelete(false);
       setError(
-        response.data?.message || "Couldn't close the account, try again.",
+        response.data?.message || t("account.closeError"),
       );
       return;
     }
@@ -212,32 +205,31 @@ export default function AccountPage() {
   }
 
   if (authLoading) {
-    return <LoadingScreen message="Opening your account…" />;
+    return <LoadingScreen message={t("account.loading")} />;
   }
 
   return (
     <div className="w-full min-h-dvh flex flex-col pb-14">
       <TopBar
         left={
-          <IconButton onClick={() => navigate(-1)} aria-label="Back">
+          <IconButton onClick={() => navigate(-1)} aria-label={t("common.back")}>
             <ArrowLeftIcon size={18} />
           </IconButton>
         }
       />
 
       <div className="px-4 pt-6">
-        <h1 className="font-serif text-4xl">Account</h1>
+        <h1 className="font-serif text-4xl">{t("account.title")}</h1>
 
         {isGuest ? (
           // Guests have a real backend user, just no credentials on it — there is
           // nothing to show and nothing to close until they sign in.
           <div className="flex flex-col items-start gap-4 bg-surface rounded-3xl p-6 mt-7">
             <p className="text-[0.95rem] text-muted-foreground leading-snug">
-              You&apos;re shooting as a guest. Sign in to keep your events and
-              photos across devices, and to see your payment history here.
+              {t("account.guestBody")}
             </p>
             <Button variant="primary" onClick={() => setOpen(true)}>
-              Sign in
+              {t("nav.signIn")}
             </Button>
           </div>
         ) : (
@@ -256,12 +248,12 @@ export default function AccountPage() {
               </div>
             </div>
 
-            <SectionLabel className="mt-9 mb-4">Details</SectionLabel>
+            <SectionLabel className="mt-9 mb-4">{t("account.details")}</SectionLabel>
 
             <div className="flex flex-col gap-2.5">
               <Row
                 icon={<UserIcon size={16} />}
-                label="Display name"
+                label={t("account.displayName")}
                 value={displayName}
                 onClick={() =>
                   editingName ? setEditingName(false) : startEditingName()
@@ -272,7 +264,7 @@ export default function AccountPage() {
                 <div className="flex flex-col gap-2.5 pb-2">
                   <Input
                     value={name}
-                    placeholder="Your name"
+                    placeholder={t("auth.displayName.placeholder")}
                     onChange={(e) => setName(e.target.value)}
                   />
                   <div className="flex flex-row gap-2.5">
@@ -282,14 +274,14 @@ export default function AccountPage() {
                       onClick={saveName}
                       disabled={savingName || !name.trim()}
                     >
-                      {savingName ? "Saving…" : "Save name"}
+                      {savingName ? t("common.saving") : t("settings.saveName")}
                     </Button>
                     <Button
                       variant="secondary"
                       size="sm"
                       onClick={() => setEditingName(false)}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </div>
                 </div>
@@ -297,13 +289,13 @@ export default function AccountPage() {
 
               <Row
                 icon={<AtSignIcon size={16} />}
-                label="Email"
+                label={t("account.email")}
                 value={user?.email}
               />
               <Row
                 icon={<CalendarIcon size={16} />}
-                label="Joined"
-                value={formatDate(user?.createdAt)}
+                label={t("account.joined")}
+                value={user?.createdAt ? fmt.day(user.createdAt) : "—"}
               />
             </div>
 
@@ -312,8 +304,8 @@ export default function AccountPage() {
             {user?.sso ? (
               <Row
                 icon={<KeyRoundIcon size={16} />}
-                label="Password"
-                value="Managed by Google"
+                label={t("account.password")}
+                value={t("account.managedByGoogle")}
               />
             ) : resetState === "sent" ? (
               <div className="flex flex-row items-center gap-3 bg-success-soft border border-success-border rounded-2xl px-4 py-4 text-[0.95rem] text-success">
@@ -326,27 +318,26 @@ export default function AccountPage() {
             ) : (
               <Row
                 icon={<KeyRoundIcon size={16} />}
-                label="Password"
+                label={t("account.password")}
                 value={
-                  resetState === "sending" ? "Sending…" : "Send a reset link"
+                  resetState === "sending" ? t("account.sending") : t("account.sendReset")
                 }
                 onClick={resetState === "sending" ? undefined : sendResetLink}
               />
             )}
 
-            <SectionLabel className="mt-9 mb-4">Payments</SectionLabel>
+            <SectionLabel className="mt-9 mb-4">{t("account.payments")}</SectionLabel>
 
             {purchases === null ? (
               <LoadingScreen
                 variant="inline"
-                message="Finding your receipts…"
+                message={t("account.loadingReceipts")}
               />
             ) : purchases.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-center bg-surface rounded-3xl">
                 <ReceiptIcon size={24} className="text-subtle" />
                 <p className="text-sm text-muted-foreground px-8 leading-snug">
-                  No payments yet. Free events never reach checkout, so this
-                  stays empty until you buy a larger one.
+                  {t("account.noPayments")}
                 </p>
               </div>
             ) : (
@@ -357,18 +348,17 @@ export default function AccountPage() {
               </div>
             )}
 
-            <SectionLabel className="mt-9 mb-4">Danger zone</SectionLabel>
+            <SectionLabel className="mt-9 mb-4">{t("account.dangerZone")}</SectionLabel>
 
             <Row
               icon={<Trash2Icon size={16} />}
-              label="Close account"
-              value="Permanent"
+              label={t("account.closeAccount")}
+              value={t("account.permanent")}
               tone="danger"
               onClick={() => setConfirmingDelete(true)}
             />
             <p className="text-xs text-subtle mt-3 leading-snug">
-              Closing your account hides it and everything you created — your
-              events, your photos, and the albums your guests were sharing.
+              {t("account.closeNote")}
             </p>
           </>
         )}
@@ -383,12 +373,12 @@ export default function AccountPage() {
       <AlertDialog
         open={confirmingDelete}
         onClose={() => (deleting ? null : setConfirmingDelete(false))}
-        title="Close your account?"
-        message="Your events and every photo in them stop being reachable, for you and for your guests. This can't be undone from the app."
+        title={t("account.closeTitle")}
+        message={t("account.closeBody")}
         onConfirm={deleteAccount}
-        confirmLabel={deleting ? "Closing…" : "Close account"}
+        confirmLabel={deleting ? t("account.closing") : t("account.closeAccount")}
         confirmVariant="danger"
-        cancelLabel="Keep my account"
+        cancelLabel={t("account.keepAccount")}
         busy={deleting}
       />
     </div>

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Button from "./Button.component";
+import { useT } from "../contexts/I18n.context";
 
 // A centred modal for "you can't do that yet" moments. The bottom Sheet is the app's
 // usual overlay, but it is built for panels of controls with no close button — this is
@@ -14,11 +15,13 @@ export default function AlertDialog({
   title,
   message,
   onConfirm,
-  confirmLabel = "Confirm",
+  confirmLabel,
   confirmVariant = "primary",
-  cancelLabel = "Cancel",
+  cancelLabel,
   busy,
 }) {
+  const t = useT();
+
   useEffect(() => {
     if (!open) return;
 
@@ -60,7 +63,7 @@ export default function AlertDialog({
               disabled={busy}
               className="w-full justify-center"
             >
-              {confirmLabel}
+              {confirmLabel || t("common.confirm")}
             </Button>
             <Button
               variant="secondary"
@@ -68,7 +71,7 @@ export default function AlertDialog({
               disabled={busy}
               className="w-full justify-center"
             >
-              {cancelLabel}
+              {cancelLabel || t("common.cancel")}
             </Button>
           </div>
         ) : (
@@ -77,7 +80,7 @@ export default function AlertDialog({
             onClick={onClose}
             className="w-full justify-center mt-6"
           >
-            Got it
+            {t("common.gotIt")}
           </Button>
         )}
       </div>

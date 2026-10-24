@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "cf:preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "deploy:preview": "npm run build && wrangler versions upload"
+    "deploy:preview": "npm run build && wrangler versions upload",
+    "check:locales": "node scripts/check-locales.mjs"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",

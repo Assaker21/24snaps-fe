@@ -12,8 +12,14 @@ async function getEventTypes() {
 
 // What the Templates sheet renders: the cards this event's type is offered, whichever
 // one the host already set up, and whether they may still change it.
-async function getForEvent(eventId) {
-  return await baseService(`/events/${eventId}/template`, { method: "GET" });
+// `locale` is the language the host is reading the site in. It decides which wording
+// the catalogue offers them — not the language of a card they have already set up,
+// which is fixed on the row the moment they pick it.
+async function getForEvent(eventId, locale) {
+  const query = locale ? `?locale=${encodeURIComponent(locale)}` : "";
+  return await baseService(`/events/${eventId}/template${query}`, {
+    method: "GET",
+  });
 }
 
 // Picking a card or editing its wording. The server draws the image as part of this,
@@ -22,10 +28,10 @@ async function getForEvent(eventId) {
 // `inviteCode` is the event's URL code, and it travels from here because the id codec
 // is deliberately client-only — the backend pairs it with its own origin to build the
 // link behind the QR, and refuses anything that isn't a codec-shaped code.
-async function save(eventId, { templateId, data }) {
+async function save(eventId, { templateId, data, locale }) {
   return await baseService(`/events/${eventId}/template`, {
     method: "PUT",
-    body: { templateId, data, inviteCode: encodeId(eventId) },
+    body: { templateId, data, inviteCode: encodeId(eventId), locale },
   });
 }
 

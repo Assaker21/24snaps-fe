@@ -8,7 +8,8 @@ import PhotoGrid from "../../components/PhotoGrid.component";
 import PhotoViewer from "../../components/PhotoViewer.component";
 import SectionLabel from "../../components/SectionLabel.component";
 import { getCoverSrc } from "../../utils/cover.util";
-import { formatDateRange } from "../../utils/dateRange.util";
+import { useT } from "../../contexts/I18n.context";
+import useFormat from "../../hooks/useFormat.hook";
 import { decodeId } from "../../utils/idCodec.util";
 import useSeo from "../../hooks/useSeo.hook";
 
@@ -21,12 +22,14 @@ import useSeo from "../../hooks/useSeo.hook";
 // than a second design.
 export default function SharedAlbumPage() {
   const { shareId } = useParams();
+  const t = useT();
+  const fmt = useFormat();
 
   const [album, setAlbum] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewerIndex, setViewerIndex] = useState(null);
 
-  useSeo({ title: album?.event?.name || "Shared album" });
+  useSeo({ title: album?.event?.name || t("shared.title") });
 
   useEffect(() => {
     let cancelled = false;
@@ -61,18 +64,17 @@ export default function SharedAlbumPage() {
     };
   }, [shareId]);
 
-  if (loading) return <LoadingScreen message="Opening the album…" />;
+  if (loading) return <LoadingScreen message={t("shared.loading")} />;
 
   if (!album) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
-        <h1 className="font-serif text-3xl">This link has closed</h1>
+        <h1 className="font-serif text-3xl">{t("shared.closed")}</h1>
         <p className="text-sm text-muted-foreground max-w-xs">
-          The album it pointed at is no longer being shared. Ask whoever sent it
-          for a fresh link.
+          {t("shared.closedBody")}
         </p>
         <Link to="/">
-          <Button variant="primary">Make your own album</Button>
+          <Button variant="primary">{t("shared.makeYourOwn")}</Button>
         </Link>
       </div>
     );
@@ -80,15 +82,23 @@ export default function SharedAlbumPage() {
 
   const { event, attachments = [] } = album;
   const coverSrc = getCoverSrc(event);
-  const dates = formatDateRange(event.startAt, event.endAt);
+  const dates = fmt.dateRange(event.startAt, event.endAt);
   // The server decides this per photo and hands out nothing but `blur` until it
   // passes; the banner is a label on a gate that has already been applied.
   const revealed =
     attachments.length === 0 || attachments.some((a) => a.revealed);
 
   const stats = [
-    { value: attachments.length, label: "Moments", Icon: ImageIcon },
-    { value: event.peopleCount ?? 1, label: "People", Icon: UsersIcon },
+    {
+      value: attachments.length,
+      label: t("event.stats.moments"),
+      Icon: ImageIcon,
+    },
+    {
+      value: event.peopleCount ?? 1,
+      label: t("event.stats.people"),
+      Icon: UsersIcon,
+    },
   ];
 
   return (
@@ -96,7 +106,7 @@ export default function SharedAlbumPage() {
       {/* Its own chrome rather than TopBar: that bar reads the auth context, and there
           isn't one here. A visitor gets the wordmark and an invitation of their own. */}
       <div className="w-full flex flex-row justify-between items-center gap-2 px-4 py-3 shrink-0 bg-background/90 backdrop-blur-md sticky top-0 z-200">
-        <Link to="/" aria-label="Sawwerna home">
+        <Link to="/" aria-label={t("nav.home")}>
           <img
             src="/logo.png"
             alt="Sawwerna"
@@ -106,7 +116,7 @@ export default function SharedAlbumPage() {
 
         <Link to="/">
           <Button variant="secondary" size="sm">
-            Make your own
+            {t("shared.makeYourOwnShort")}
           </Button>
         </Link>
       </div>
@@ -122,7 +132,7 @@ export default function SharedAlbumPage() {
         <div className="absolute inset-x-0 bottom-0 px-5 pt-16 pb-7 flex flex-col items-center text-center text-white">
           {event.host?.firstName ? (
             <SectionLabel className="text-white/70">
-              An album by {event.host.firstName}
+              {t("shared.albumBy", { name: event.host.firstName })}
             </SectionLabel>
           ) : null}
 
@@ -153,28 +163,24 @@ export default function SharedAlbumPage() {
       ) : null}
 
       <div className="px-4 pt-7 pb-14 max-w-5xl w-full mx-auto">
-        <SectionLabel>The album</SectionLabel>
+        <SectionLabel>{t("shared.theAlbum")}</SectionLabel>
 
         {!revealed ? (
           <div className="flex justify-center mt-5">
             <span className="flex flex-row items-center gap-2 bg-surface text-muted-foreground text-xs rounded-full px-4 py-2 whitespace-nowrap">
               <ClockIcon size={13} />
-              Reveals on{" "}
-              {event.revealAt
-                ? new Date(event.revealAt).toLocaleString([], {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })
-                : "soon"}
+              {t("event.revealsOn", {
+                moment: event.revealAt
+                  ? fmt.moment(event.revealAt)
+                  : t("event.revealsSoon"),
+              })}
             </span>
           </div>
         ) : null}
 
         {attachments.length === 0 ? (
           <p className="text-sm text-subtle text-center mt-12">
-            No moments were captured at this one.
+            {t("shared.noMoments")}
           </p>
         ) : (
           // The grid widens past the app's two columns here: a shared link is as
@@ -188,13 +194,12 @@ export default function SharedAlbumPage() {
       </div>
 
       <div className="mt-auto border-t border-border px-5 py-8 flex flex-col items-center gap-3 text-center">
-        <p className="font-serif text-2xl">Your turn.</p>
+        <p className="font-serif text-2xl">{t("shared.yourTurn")}</p>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Hand everyone a camera at your next event and see the night through
-          their eyes.
+          {t("shared.yourTurnBody")}
         </p>
         <Link to="/" className="mt-1">
-          <Button variant="primary">Create an event</Button>
+          <Button variant="primary">{t("shared.createEvent")}</Button>
         </Link>
       </div>
 

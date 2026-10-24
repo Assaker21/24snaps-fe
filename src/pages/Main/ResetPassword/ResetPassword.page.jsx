@@ -6,6 +6,7 @@ import Input from "../../../components/Input.component";
 import TopBar from "../../../components/TopBar.component";
 import authService from "../../../services/auth.service";
 import useSeo from "../../../hooks/useSeo.hook";
+import { useT } from "../../../contexts/I18n.context";
 
 // Where the link in the reset password email lands. The token rides in the query
 // string (the backend minted it, signed, with an hour to live) and goes straight back
@@ -17,7 +18,8 @@ import useSeo from "../../../hooks/useSeo.hook";
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function ResetPasswordPage() {
-  useSeo({ title: "Reset your password" });
+  const t = useT();
+  useSeo({ title: t("reset.title") });
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -39,7 +41,7 @@ export default function ResetPasswordPage() {
       return;
     }
     if (password !== confirmation) {
-      setError("Those two passwords don't match.");
+      setError(t("reset.mismatch"));
       return;
     }
 
@@ -54,7 +56,7 @@ export default function ResetPasswordPage() {
       // after the fact — so the message points back at asking for a fresh one.
       setError(
         response.data?.message ||
-          "That link didn't work. It may have expired — ask for a new one from your account page.",
+          t("reset.badLink"),
       );
       return;
     }
@@ -67,7 +69,7 @@ export default function ResetPasswordPage() {
       <TopBar />
 
       <div className="px-4 pt-6 max-w-md w-full mx-auto">
-        <h1 className="font-serif text-4xl">Choose a new password</h1>
+        <h1 className="font-serif text-4xl">{t("reset.heading")}</h1>
 
         {!token ? (
           <div className="flex flex-col items-start gap-4 bg-surface rounded-3xl p-6 mt-7">
@@ -77,7 +79,7 @@ export default function ResetPasswordPage() {
               a new link from your account page.
             </p>
             <Link to="/account">
-              <Button variant="primary">Go to my account</Button>
+              <Button variant="primary">{t("reset.goToAccount")}</Button>
             </Link>
           </div>
         ) : done ? (
@@ -93,7 +95,7 @@ export default function ResetPasswordPage() {
               className="w-full justify-center mt-5"
               onClick={() => navigate("/")}
             >
-              Continue
+              {t("common.continue")}
             </Button>
           </>
         ) : (
@@ -106,7 +108,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 mt-7">
               <Input
                 type="password"
-                placeholder="New password"
+                placeholder={t("reset.newPassword")}
                 autoComplete="new-password"
                 icon={<KeyRoundIcon size={16} />}
                 value={password}
@@ -115,7 +117,7 @@ export default function ResetPasswordPage() {
               />
               <Input
                 type="password"
-                placeholder="Confirm new password"
+                placeholder={t("reset.confirmPassword")}
                 autoComplete="new-password"
                 icon={<KeyRoundIcon size={16} />}
                 value={confirmation}
@@ -135,7 +137,7 @@ export default function ResetPasswordPage() {
                 disabled={submitting}
                 className="w-full justify-center"
               >
-                {submitting ? "Saving…" : "Save new password"}
+                {submitting ? t("common.saving") : t("reset.submit")}
               </Button>
             </form>
           </>

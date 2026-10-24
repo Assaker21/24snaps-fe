@@ -7,6 +7,7 @@ import { useSearchParams, useNavigate } from "react-router";
 import authService from "../../services/auth.service.js";
 import DisplayNamePopup from "./DisplayName.popup";
 import { useAuth } from "../../contexts/Auth.context";
+import { useT } from "../../contexts/I18n.context";
 
 // Google is sent this at the authorize step and must be sent the identical string
 // again when the backend exchanges the code, or the exchange fails with
@@ -18,10 +19,10 @@ import { useAuth } from "../../contexts/Auth.context";
 // GOOGLE_REDIRECT_URIS.
 const GOOGLE_REDIRECT_URI = window.location.origin;
 
-const TITLES = {
-  email: "Sign up to continue viewing your memories",
-  password: "Enter your password",
-  register: "Create your account",
+const TITLE_KEYS = {
+  email: "auth.title.email",
+  password: "auth.title.password",
+  register: "auth.title.register",
 };
 
 // "email"    — just asks for an email, then figures out what to do next.
@@ -31,6 +32,7 @@ const TITLES = {
 // straight into the Google popup instead, see handleEmailContinue below.)
 export default function LoginPopup({ open, setOpen }) {
   const { setUser } = useAuth();
+  const t = useT();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -79,7 +81,7 @@ export default function LoginPopup({ open, setOpen }) {
   // succeeded.
   async function completeAuth(response) {
     if (!response.ok) {
-      setError(response.data?.message || "Something went wrong");
+      setError(response.data?.message || t("common.somethingWentWrong"));
       return { ok: false, user: null };
     }
 
@@ -123,7 +125,7 @@ export default function LoginPopup({ open, setOpen }) {
     setSubmitting(false);
 
     if (!response.ok) {
-      setError(response.data?.message || "Something went wrong");
+      setError(response.data?.message || t("common.somethingWentWrong"));
       return;
     }
 
@@ -163,11 +165,11 @@ export default function LoginPopup({ open, setOpen }) {
       <Sheet
         open={open}
         setOpen={setOpen}
-        title={TITLES[step]}
+        title={t(TITLE_KEYS[step])}
         onBack={step === "email" ? undefined : backToEmail}
         description={
           step === "email"
-            ? "You are currently on guest mode. Create an account to view the remaining photos."
+            ? t("auth.guestNotice")
             : undefined
         }
       >
@@ -200,13 +202,13 @@ export default function LoginPopup({ open, setOpen }) {
                   ></path>
                   <path fill="none" d="M0 0h48v48H0z"></path>
                 </svg>
-                Sign in with Google
+                {t("auth.google")}
               </Button>
             </div>
 
             <div className="flex items-center gap-3 text-xs text-subtle pb-5">
               <div className="flex-1 h-px bg-border" />
-              or
+              {t("auth.or")}
               <div className="flex-1 h-px bg-border" />
             </div>
 
@@ -216,7 +218,7 @@ export default function LoginPopup({ open, setOpen }) {
             >
               <Input
                 type="email"
-                placeholder="Email"
+                placeholder={t("auth.email")}
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -231,7 +233,7 @@ export default function LoginPopup({ open, setOpen }) {
                 disabled={submitting}
                 className="w-full justify-center"
               >
-                {submitting ? "Please wait…" : "Continue"}
+                {submitting ? t("common.pleaseWait") : t("common.continue")}
               </Button>
             </form>
           </>
@@ -247,14 +249,14 @@ export default function LoginPopup({ open, setOpen }) {
             {step === "register" && (
               <div className="flex flex-row gap-3">
                 <Input
-                  placeholder="First name"
+                  placeholder={t("auth.firstName")}
                   autoComplete="given-name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                 />
                 <Input
-                  placeholder="Last name"
+                  placeholder={t("auth.lastName")}
                   autoComplete="family-name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
@@ -265,7 +267,7 @@ export default function LoginPopup({ open, setOpen }) {
 
             <Input
               type="password"
-              placeholder="Password"
+              placeholder={t("auth.password")}
               autoComplete={
                 step === "register" ? "new-password" : "current-password"
               }
@@ -284,10 +286,10 @@ export default function LoginPopup({ open, setOpen }) {
               className="w-full justify-center"
             >
               {submitting
-                ? "Please wait…"
+                ? t("common.pleaseWait")
                 : step === "register"
-                  ? "Create account"
-                  : "Sign in"}
+                  ? t("auth.createAccount")
+                  : t("nav.signIn")}
             </Button>
           </form>
         )}

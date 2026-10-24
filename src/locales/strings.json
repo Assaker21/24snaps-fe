@@ -1,0 +1,1793 @@
+{
+  "_readme": [
+    "Every word the app says, in one file. Nothing user-facing is written in a component.",
+    "",
+    "SHAPE: `strings` is keyed by string, not by language — one row carries all four",
+    "variants side by side, so you can see at a glance which are missing and edit a",
+    "sentence across every language at once.",
+    "",
+    "FALLBACK: a locale with nothing of its own inherits down its `fallback` chain, so",
+    "ar-SA only needs the rows where the Saudi dialect actually differs from fus7a, and",
+    "en-LB only the rows that get the Lebanese flavour. Leave a locale out of a row and",
+    "it inherits. That is the normal case, not an omission.",
+    "",
+    "PLURALS: a value may be an object of plural categories instead of a string. English",
+    "uses one/other; Arabic uses zero/one/two/few/many/other and is selected with",
+    "Intl.PluralRules. `=0`, `=1` etc. are exact-match overrides that win over category.",
+    "",
+    "PLACEHOLDERS: `{name}` is substituted at render. Keep every placeholder a",
+    "translation receives — a dropped one shows up as a literal `{name}` on screen.",
+    "",
+    "WHO GETS WHAT: see `regions` below. Region comes from the device timezone (and is",
+    "double-checked against Cloudflare's view of the request); language comes from the",
+    "device's own preference list. An explicit choice in the language switcher beats both."
+  ],
+  "defaultLocale": "en",
+  "locales": {
+    "en": {
+      "label": "English",
+      "native": "English",
+      "dir": "ltr",
+      "htmlLang": "en",
+      "formatLocale": "en",
+      "fallback": null
+    },
+    "en-LB": {
+      "label": "English (Lebanon)",
+      "native": "English",
+      "dir": "ltr",
+      "htmlLang": "en-LB",
+      "formatLocale": "en-GB",
+      "fallback": "en"
+    },
+    "ar-LB": {
+      "label": "Arabic",
+      "native": "العربية",
+      "dir": "rtl",
+      "htmlLang": "ar-LB",
+      "_formatLocale": "Gregorian forced: the Hijri calendar is ar-SA's Intl default and would misdate an event the host set in Gregorian. Latin digits forced so interpolated counts and formatted dates don't end up in two different numeral systems — drop `-nu-latn` to use Arabic-Indic digits throughout.",
+      "formatLocale": "ar-LB-u-ca-gregory-nu-latn",
+      "fallback": "en"
+    },
+    "ar-SA": {
+      "label": "Arabic (Saudi)",
+      "native": "العربية",
+      "dir": "rtl",
+      "htmlLang": "ar-SA",
+      "formatLocale": "ar-SA-u-ca-gregory-nu-latn",
+      "_fallback": "Saudi dialect falls back to fus7a, not to English — so this column only carries the lines where the dialect genuinely differs.",
+      "fallback": "ar-LB"
+    }
+  },
+  "regions": {
+    "LB": {
+      "name": "Lebanon",
+      "timezones": ["Asia/Beirut"],
+      "arabic": "ar-LB",
+      "english": "en-LB"
+    },
+    "SA": {
+      "name": "Saudi Arabia",
+      "timezones": ["Asia/Riyadh"],
+      "arabic": "ar-SA",
+      "english": "en"
+    }
+  },
+  "strings": {
+    "common.next": {
+      "en": "Next",
+      "ar-LB": "التالي"
+    },
+    "common.back": {
+      "en": "Back",
+      "ar-LB": "رجوع"
+    },
+    "common.cancel": {
+      "en": "Cancel",
+      "ar-LB": "إلغاء",
+      "ar-SA": "إلغاء"
+    },
+    "common.confirm": {
+      "en": "Confirm",
+      "ar-LB": "تأكيد"
+    },
+    "common.saving": {
+      "en": "Saving…",
+      "ar-LB": "جاري الحفظ…"
+    },
+    "common.continue": {
+      "en": "Continue",
+      "en-LB": "Yalla, continue",
+      "ar-LB": "متابعة",
+      "ar-SA": "كمّل"
+    },
+    "common.pleaseWait": {
+      "en": "Please wait…",
+      "ar-LB": "لحظة من فضلك…"
+    },
+    "common.download": {
+      "en": "Download",
+      "ar-LB": "تنزيل"
+    },
+    "common.downloading": {
+      "en": "Downloading…",
+      "ar-LB": "جاري التنزيل…"
+    },
+    "common.share": {
+      "en": "Share",
+      "ar-LB": "مشاركة"
+    },
+    "common.copied": {
+      "en": "Copied",
+      "ar-LB": "تم النسخ"
+    },
+    "common.close": {
+      "en": "Close",
+      "ar-LB": "إغلاق"
+    },
+    "common.free": {
+      "en": "Free",
+      "ar-LB": "مجاناً",
+      "ar-SA": "ببلاش"
+    },
+    "common.untitledEvent": {
+      "en": "Untitled event",
+      "ar-LB": "مناسبة بلا اسم",
+      "ar-SA": "مناسبة بدون اسم"
+    },
+    "common.somethingWentWrong": {
+      "en": "Something went wrong, try again.",
+      "ar-LB": "حدث خطأ ما، حاول مرة أخرى.",
+      "ar-SA": "صار خطأ، جرّب مرة ثانية."
+    },
+    "common.noDownloadRequired": {
+      "en": "No download required.",
+      "en-LB": "No download, no app, wala shi.",
+      "ar-LB": "بدون أي تطبيق.",
+      "ar-SA": "من دون أي تطبيق."
+    },
+    "lang.switch": {
+      "en": "Language",
+      "ar-LB": "اللغة"
+    },
+    "nav.signIn": {
+      "en": "Sign in",
+      "ar-LB": "تسجيل الدخول",
+      "ar-SA": "تسجيل دخول"
+    },
+    "nav.account": {
+      "en": "Account",
+      "ar-LB": "حسابي"
+    },
+    "nav.events": {
+      "en": "Events",
+      "ar-LB": "مناسباتي"
+    },
+    "nav.new": {
+      "en": "New",
+      "ar-LB": "جديدة"
+    },
+    "nav.home": {
+      "en": "Sawwerna home",
+      "ar-LB": "الصفحة الرئيسية لصوّرنا"
+    },
+    "nav.signingYouIn": {
+      "en": "Signing you in",
+      "ar-LB": "جاري تسجيل دخولك"
+    },
+    "landing.hero.title": {
+      "en": "Your day,\n as everyone \nsaw it.",
+      "en-LB": "Your day,\n as everyone \nsaw it.",
+      "//en": "Capture\nyour day through\neveryone's eyes.",
+      "//en-LB": "Capture your day\nthrough everyone's\neyes.",
+      "ar-LB": "عيشوا يومكم\nمن عيون\nكل اللي حواليكم.",
+      "ar-SA": "عيشوا يومكم\nمن عيون\nكل اللي حواليكم."
+    },
+    "landing.hero.body": {
+      "en": "Sawwerna is a premium private photo sharing app for events. Guests join via QR (no download), snap memorable photos, and the album reveals after the event.",
+      "en-LB": "Sawwerna is a premium photo app for your events. Your guests scan the QR — no download, wala account — they snap, w l album byefta7 baad ma yokhlas l event.",
+      "ar-LB": "صوّرنا تطبيق خاص لمشاركة صور المناسبات. يدخل ضيوفك عبر رمز QR من دون أي تحميل، يلتقطون صورهم، ويُكشف الألبوم بعد انتهاء المناسبة.",
+      "ar-SA": "صوّرنا تطبيق خاص لمشاركة صور المناسبات. ضيوفك يدخلون عن طريق رمز QR من دون أي تحميل، يصوّرون، والألبوم ينفتح بعد ما تخلص المناسبة."
+    },
+    "landing.hero.cta": {
+      "en": "Create your event",
+      "en-LB": "Yalla, create your event",
+      "ar-LB": "أنشئ مناسبتك",
+      "ar-SA": "سوّ مناسبتك"
+    },
+    "landing.hero.imageAlt": {
+      "en": "Two phones showing a Sawwerna album: a wedding cover with the moment count and countdown, and the in-browser camera mid-shot.",
+      "ar-LB": "هاتفان يعرضان ألبوم صوّرنا: غلاف عرس مع عدد اللحظات والعد التنازلي، والكاميرا داخل المتصفح أثناء التصوير."
+    },
+    "landing.useCases.label": {
+      "en": "Use cases",
+      "ar-LB": "المناسبات"
+    },
+    "landing.useCases.quote": {
+      "en": "“Your guests\ncaptured moments\nyou never saw.”",
+      "ar-LB": "«ضيوفك التقطوا\nلحظات\nلم ترها أبداً.»",
+      "ar-SA": "«ضيوفك صوّروا\nلحظات\nعمرك ما شفتها.»"
+    },
+    "landing.useCases.wedding": {
+      "en": "Wedding",
+      "ar-LB": "عرس"
+    },
+    "landing.useCases.birthday": {
+      "en": "Birthday",
+      "ar-LB": "عيد ميلاد"
+    },
+    "landing.useCases.trip": {
+      "en": "Trip",
+      "ar-LB": "رحلة"
+    },
+    "landing.useCases.party": {
+      "en": "Party",
+      "ar-LB": "حفلة",
+      "ar-SA": "حفلة"
+    },
+    "landing.useCases.everyday": {
+      "en": "Just everyday",
+      "en-LB": "Just 3adi days",
+      "ar-LB": "أيام عادية",
+      "ar-SA": "أيام عادية"
+    },
+    "landing.how.label": {
+      "en": "How it works",
+      "ar-LB": "كيف تعمل"
+    },
+    "landing.how.title": {
+      "en": "How a Day\nBecomes an Album.",
+      "ar-LB": "كيف يتحوّل يوم\nإلى ألبوم.",
+      "ar-SA": "كيف يصير اليوم\nألبوم."
+    },
+    "landing.how.step": {
+      "en": "Step 0{number}",
+      "ar-LB": "الخطوة 0{number}"
+    },
+    "landing.how.create.title": {
+      "en": "Create an event",
+      "ar-LB": "أنشئ مناسبة",
+      "ar-SA": "سوّ مناسبة"
+    },
+    "landing.how.create.body": {
+      "en": "Name your event, set how long it will stay open, and what kind of moment it's for.",
+      "ar-LB": "سمّ مناسبتك، وحدّد مدة بقائها مفتوحة، ونوع اللحظة التي تحتفل بها.",
+      "ar-SA": "سمّ مناسبتك، وحدّد كم بتضل مفتوحة، ووش نوعها."
+    },
+    "landing.how.invite.title": {
+      "en": "Invite your people",
+      "en-LB": "Invite l jame3a",
+      "ar-LB": "ادعُ أحبّتك",
+      "ar-SA": "عازم اللي تبيهم"
+    },
+    "landing.how.invite.body": {
+      "en": "Share your event link or QR code and invite friends to capture the day with you.",
+      "ar-LB": "شارك رابط مناسبتك أو رمز QR وادعُ أصدقاءك ليوثّقوا اليوم معك.",
+      "ar-SA": "شارك رابط مناسبتك أو رمز QR وعازم ربعك يصوّرون اليوم معك."
+    },
+    "landing.how.capture.title": {
+      "en": "Capture together",
+      "ar-LB": "صوّروا معاً",
+      "ar-SA": "صوّروا مع بعض"
+    },
+    "landing.how.capture.body": {
+      "en": "Take photos throughout the day, every shot fills your shared album.",
+      "ar-LB": "التقطوا الصور طوال اليوم، وكل لقطة تملأ ألبومكم المشترك.",
+      "ar-SA": "صوّروا طول اليوم، وكل لقطة تروح لألبومكم المشترك."
+    },
+    "landing.cta.title": {
+      "en": "Life happens once.\nDon't let it fade away.",
+      "en-LB": "Life happens once.\nMa tkhaliya trou7.",
+      "ar-LB": "الحياة تحدث مرة واحدة.\nلا تدعها تتلاشى.",
+      "ar-SA": "العمر مرة وحدة.\nلا تخليه يروح."
+    },
+    "landing.footer.title": {
+      "en": "A single day becomes timeless, when remembered together.",
+      "ar-LB": "يوم واحد يصبح خالداً حين نتذكّره معاً.",
+      "ar-SA": "يوم واحد يصير ما ينتسى لما نتذكره مع بعض."
+    },
+    "landing.footer.body": {
+      "en": "Hand your guests a disposable camera that lives in their browser. No download, no account, no photo left on someone else's phone.",
+      "en-LB": "Give your guests a disposable camera that lives in their browser. No download, no account, w ma fi sora tedal 3a telephone 7ada.",
+      "ar-LB": "أعطِ ضيوفك كاميرا تعيش داخل متصفحهم. بلا تحميل، بلا حساب، وبلا صورة تبقى على هاتف أحد آخر.",
+      "ar-SA": "اعطِ ضيوفك كاميرا داخل المتصفح. بدون تحميل، بدون حساب، وبدون ما تضيع صورة على جوال أحد."
+    },
+    "landing.footer.copyright": {
+      "en": "© {year} Sawwerna {version}",
+      "ar-LB": "© {year} صوّرنا {version}"
+    },
+    "auth.title.email": {
+      "en": "Sign in to continue viewing your memories",
+      "en-LB": "Sign in to continue viewing your memories",
+      "ar-LB": "سجّل للمتابعة ومشاهدة ذكرياتك",
+      "ar-SA": "سجّل عشان تكمّل وتشوف ذكرياتك"
+    },
+    "auth.title.password": {
+      "en": "Enter your password",
+      "ar-LB": "أدخل كلمة المرور"
+    },
+    "auth.title.register": {
+      "en": "Create your account",
+      "ar-LB": "أنشئ حسابك",
+      "ar-SA": "سوّ حسابك"
+    },
+    "auth.guestNotice": {
+      "en": "You are currently on guest mode. Create an account to view the remaining photos.",
+      "ar-LB": "أنت الآن في وضع الضيف. أنشئ حساباً لمشاهدة بقية الصور.",
+      "ar-SA": "أنت الحين كضيف. سوّ حساب عشان تشوف باقي الصور."
+    },
+    "auth.google": {
+      "en": "Sign in with Google",
+      "ar-LB": "تسجيل الدخول عبر Google"
+    },
+    "auth.or": {
+      "en": "or",
+      "ar-LB": "أو"
+    },
+    "auth.email": {
+      "en": "Email",
+      "ar-LB": "البريد الإلكتروني"
+    },
+    "auth.password": {
+      "en": "Password",
+      "ar-LB": "كلمة المرور"
+    },
+    "auth.firstName": {
+      "en": "First name",
+      "ar-LB": "الاسم الأول"
+    },
+    "auth.lastName": {
+      "en": "Last name",
+      "ar-LB": "اسم العائلة"
+    },
+    "auth.createAccount": {
+      "en": "Create account",
+      "ar-LB": "إنشاء الحساب",
+      "ar-SA": "سوّ الحساب"
+    },
+    "auth.displayName.title": {
+      "en": "What should we call you?",
+      "en-LB": "Shou badna nnedik?",
+      "ar-LB": "بماذا ننادیك؟",
+      "ar-SA": "وش نناديك؟"
+    },
+    "auth.displayName.body": {
+      "en": "This is the name your guests see on the events you host. You can change it later from your account.",
+      "ar-LB": "هذا هو الاسم الذي يراه ضيوفك على المناسبات التي تستضيفها. يمكنك تغييره لاحقاً من حسابك.",
+      "ar-SA": "هذا الاسم اللي بيشوفه ضيوفك على مناسباتك. تقدر تغيّره بعدين من حسابك."
+    },
+    "auth.displayName.placeholder": {
+      "en": "Your name",
+      "ar-LB": "اسمك"
+    },
+    "auth.displayName.confirm": {
+      "en": "That's me",
+      "en-LB": "Hayda ana",
+      "ar-LB": "هذا أنا",
+      "ar-SA": "هذا أنا"
+    },
+    "auth.displayName.error": {
+      "en": "Couldn't save that name, try again.",
+      "ar-LB": "تعذّر حفظ الاسم، حاول مرة أخرى.",
+      "ar-SA": "ما انحفظ الاسم، جرّب مرة ثانية."
+    },
+    "events.title": {
+      "en": "Your events",
+      "ar-LB": "مناسباتك"
+    },
+    "events.active": {
+      "en": "Active",
+      "ar-LB": "جارية",
+      "ar-SA": "شغّالة"
+    },
+    "events.albums": {
+      "en": "Albums",
+      "ar-LB": "الألبومات"
+    },
+    "events.loading": {
+      "en": "Finding your events…",
+      "ar-LB": "جاري البحث عن مناسباتك…",
+      "ar-SA": "نلقى مناسباتك…"
+    },
+    "events.empty": {
+      "en": "No active events",
+      "ar-LB": "لا مناسبات جارية",
+      "ar-SA": "ما فيه مناسبات شغّالة"
+    },
+    "events.createEvent": {
+      "en": "Create event",
+      "ar-LB": "أنشئ مناسبة",
+      "ar-SA": "سوّ مناسبة"
+    },
+    "events.emptyAlbum": {
+      "en": "No photos in this album",
+      "ar-LB": "لا صور في هذا الألبوم",
+      "ar-SA": "ما فيه صور بهذا الألبوم"
+    },
+    "events.momentCount": {
+      "en": {
+        "one": "{count} moment",
+        "other": "{count} moments"
+      },
+      "ar-LB": {
+        "zero": "لا لحظات",
+        "one": "لحظة واحدة",
+        "two": "لحظتان",
+        "few": "{count} لحظات",
+        "many": "{count} لحظة",
+        "other": "{count} لحظة"
+      },
+      "ar-SA": {
+        "zero": "ما فيه لحظات",
+        "one": "لحظة وحدة",
+        "two": "لحظتين",
+        "few": "{count} لحظات",
+        "many": "{count} لحظة",
+        "other": "{count} لحظة"
+      }
+    },
+    "countdown.ended": {
+      "en": "Ended",
+      "ar-LB": "انتهت",
+      "ar-SA": "خلصت"
+    },
+    "countdown.daysLeft": {
+      "en": "{days}d {hours}h left",
+      "ar-LB": "باقي {days} ي {hours} س"
+    },
+    "countdown.hoursLeft": {
+      "en": "{hours}h {minutes}m left",
+      "ar-LB": "باقي {hours} س {minutes} د"
+    },
+    "countdown.minutesLeft": {
+      "en": "{minutes}m left",
+      "ar-LB": "باقي {minutes} د"
+    },
+    "countdown.opensSoon": {
+      "en": "Opens soon",
+      "ar-LB": "تفتح قريباً",
+      "ar-SA": "بتفتح قريب"
+    },
+    "create.loading": {
+      "en": "Loading your camera bag…",
+      "ar-LB": "جاري تجهيز حقيبة الكاميرا…",
+      "ar-SA": "نجهّز شنطة الكاميرا…"
+    },
+    "create.creating": {
+      "en": "Creating your special event…",
+      "ar-LB": "جاري إنشاء مناسبتك…",
+      "ar-SA": "نسوّي مناسبتك…"
+    },
+    "create.submit": {
+      "en": "Create",
+      "ar-LB": "إنشاء",
+      "ar-SA": "سوّها"
+    },
+    "create.submitting": {
+      "en": "Creating…",
+      "ar-LB": "جاري الإنشاء…",
+      "ar-SA": "نسوّيها…"
+    },
+    "create.name.title": {
+      "en": "What's your name?",
+      "en-LB": "Shou esmak?",
+      "ar-LB": "ما اسمك؟",
+      "ar-SA": "وش اسمك؟"
+    },
+    "create.name.body": {
+      "en": "We'll use this to greet you and personalize\nsuggestions for your event.",
+      "ar-LB": "سنستخدمه للترحيب بك ولاقتراح\nأسماء تناسب مناسبتك.",
+      "ar-SA": "بنستخدمه نرحّب فيك ونقترح\nأسماء تناسب مناسبتك."
+    },
+    "create.name.placeholder": {
+      "en": "Enter your name",
+      "ar-LB": "أدخل اسمك",
+      "ar-SA": "اكتب اسمك"
+    },
+    "eventType.wedding": {
+      "en": "Wedding",
+      "ar-LB": "زفاف",
+      "ar-SA": "زواج"
+    },
+    "eventType.party": {
+      "en": "Party",
+      "ar-LB": "حفلة"
+    },
+    "eventType.birthday": {
+      "en": "Birthday",
+      "ar-LB": "عيد ميلاد"
+    },
+    "eventType.travel": {
+      "en": "Travel",
+      "ar-LB": "سفر"
+    },
+    "eventType.other": {
+      "en": "Other",
+      "ar-LB": "أخرى"
+    },
+    "create.type.title": {
+      "en": "What kind of event is this?",
+      "en-LB": "Shou no3 l event?",
+      "ar-LB": "ما نوع هذه المناسبة؟",
+      "ar-SA": "وش نوع المناسبة؟"
+    },
+    "create.type.body": {
+      "en": "It shapes the name suggestions we offer and\nwhich printable cards your event comes with.",
+      "ar-LB": "يحدّد ذلك الأسماء التي نقترحها\nوالبطاقات القابلة للطباعة التي تأتي مع مناسبتك.",
+      "ar-SA": "هذا يحدّد الأسماء اللي نقترحها\nوالبطاقات اللي تجي مع مناسبتك."
+    },
+    "create.type.problem.title": {
+      "en": "Pick a kind first",
+      "ar-LB": "اختر النوع أولاً",
+      "ar-SA": "اختر النوع أول"
+    },
+    "create.type.problem.body": {
+      "en": "Choosing what kind of event this is lets us suggest a name and offer you the right cards to print for your guests.",
+      "ar-LB": "اختيار نوع المناسبة يتيح لنا اقتراح اسم وتقديم البطاقات المناسبة لطباعتها لضيوفك.",
+      "ar-SA": "لما تختار نوع المناسبة نقدر نقترح اسم ونعطيك البطاقات المناسبة تطبعها لضيوفك."
+    },
+    "create.eventName.title": {
+      "en": "What is the name of your event?",
+      "en-LB": "Shou badak tsammiya?",
+      "ar-LB": "ما اسم مناسبتك؟",
+      "ar-SA": "وش اسم مناسبتك؟"
+    },
+    "create.eventName.body": {
+      "en": "Choose the perfect title for your event.\nThis title will be visible to all of your event guests.",
+      "ar-LB": "اختر العنوان المناسب لمناسبتك.\nسيظهر هذا العنوان لجميع ضيوفك.",
+      "ar-SA": "اختر اسم يناسب مناسبتك.\nهذا الاسم بيشوفه كل ضيوفك."
+    },
+    "create.eventName.placeholder": {
+      "en": "Name your event",
+      "ar-LB": "سمّ مناسبتك"
+    },
+    "create.eventName.suggestions": {
+      "en": "Suggestions",
+      "ar-LB": "اقتراحات"
+    },
+    "create.suggest.wedding1": {
+      "en": "Our Wedding Day",
+      "ar-LB": "يوم عرسنا",
+      "ar-SA": "يوم ملكتنا"
+    },
+    "create.suggest.wedding2": {
+      "en": "{name}'s Wedding day",
+      "ar-LB": "عرس {name}"
+    },
+    "create.suggest.wedding3": {
+      "en": "Our Big Day",
+      "ar-LB": "يومنا الكبير"
+    },
+    "create.suggest.party1": {
+      "en": "{name}'s party",
+      "ar-LB": "حفلة {name}"
+    },
+    "create.suggest.party2": {
+      "en": "Our Little Party",
+      "ar-LB": "حفلتنا الصغيرة"
+    },
+    "create.suggest.party3": {
+      "en": "The Afterparty",
+      "ar-LB": "سهرة ما بعد الحفل",
+      "ar-SA": "سهرة بعد الحفلة"
+    },
+    "create.suggest.birthday1": {
+      "en": "{name}'s Birthday",
+      "ar-LB": "عيد ميلاد {name}"
+    },
+    "create.suggest.birthday2": {
+      "en": "Birthday Bash",
+      "ar-LB": "حفلة عيد الميلاد"
+    },
+    "create.suggest.birthday3": {
+      "en": "Another Trip Around the Sun",
+      "ar-LB": "دورة أخرى حول الشمس",
+      "ar-SA": "سنة جديدة بالعمر"
+    },
+    "create.suggest.travel1": {
+      "en": "Our Trip",
+      "ar-LB": "رحلتنا"
+    },
+    "create.suggest.travel2": {
+      "en": "{name}'s Adventure",
+      "ar-LB": "مغامرة {name}"
+    },
+    "create.suggest.travel3": {
+      "en": "The Road Trip",
+      "ar-LB": "رحلة الطريق",
+      "ar-SA": "طلعة برّية"
+    },
+    "create.suggest.other1": {
+      "en": "{name}'s party",
+      "ar-LB": "حفلة {name}"
+    },
+    "create.suggest.other2": {
+      "en": "Our Anniversary",
+      "ar-LB": "ذكرانا السنوية",
+      "ar-SA": "ذكرى سنوية"
+    },
+    "create.suggest.other3": {
+      "en": "Our Little Party",
+      "ar-LB": "حفلتنا الصغيرة"
+    },
+    "create.endAt.title": {
+      "en": "When does your event finish?",
+      "en-LB": "Emta byekhlas l event?",
+      "ar-LB": "متى تنتهي مناسبتك؟",
+      "ar-SA": "متى تخلص مناسبتك؟"
+    },
+    "create.endAt.body": {
+      "en": "The event opens as soon as you create it, and guests\ncan capture photos until it closes at your chosen time.",
+      "ar-LB": "تفتح المناسبة فور إنشائها، ويستطيع الضيوف\nالتقاط الصور حتى تُغلق في الوقت الذي تختاره.",
+      "ar-SA": "المناسبة تفتح أول ما تسوّيها، والضيوف\nيقدرون يصوّرون لين تسكّر بالوقت اللي تختاره."
+    },
+    "create.endAt.problem.title": {
+      "en": "That's already been and gone",
+      "ar-LB": "هذا الوقت قد مضى",
+      "ar-SA": "هذا الوقت راح"
+    },
+    "create.endAt.problem.body": {
+      "en": "Your event opens the moment you create it, so it has to close some time after that. Pick a date and time from now onwards.",
+      "ar-LB": "تفتح مناسبتك لحظة إنشائها، لذا يجب أن تُغلق بعد ذلك. اختر تاريخاً ووقتاً من الآن فصاعداً.",
+      "ar-SA": "مناسبتك تفتح أول ما تسوّيها، فلازم تسكّر بعدها. اختر تاريخ ووقت من الحين وطالع."
+    },
+    "create.time": {
+      "en": "Time",
+      "ar-LB": "الوقت"
+    },
+    "create.reveal.title": {
+      "en": "When should we reveal your photos?",
+      "en-LB": "Emta bado yetla3 l album?",
+      "ar-LB": "متى نكشف صوركم؟",
+      "ar-SA": "متى نكشف صوركم؟"
+    },
+    "create.reveal.body": {
+      "en": "Photos are hidden by default during the event.\nYou can select when the photos will be revealed.",
+      "ar-LB": "تبقى الصور مخفيّة أثناء المناسبة.\nويمكنك تحديد موعد كشفها.",
+      "ar-SA": "الصور تضل مخفية أثناء المناسبة.\nوتقدر تحدد متى تنكشف."
+    },
+    "create.reveal.during": {
+      "en": "During\nEvent",
+      "ar-LB": "أثناء\nالمناسبة"
+    },
+    "create.reveal.after": {
+      "en": "After\nEvent",
+      "ar-LB": "بعد\nالمناسبة"
+    },
+    "create.reveal.delay": {
+      "en": "Additional\nDelay",
+      "ar-LB": "تأخير\nإضافي"
+    },
+    "create.reveal.sampleGuest1": {
+      "en": "Layla A.",
+      "ar-LB": "ليلى ع."
+    },
+    "create.reveal.sampleGuest2": {
+      "en": "Samir S.",
+      "ar-LB": "سمير س."
+    },
+    "create.reveal.revealsOn": {
+      "en": "Reveals on {moment}",
+      "ar-LB": "تُكشف في {moment}",
+      "ar-SA": "تنكشف في {moment}"
+    },
+    "create.reveal.hoursAfter": {
+      "en": "hours after the event ends",
+      "ar-LB": "ساعات بعد انتهاء المناسبة",
+      "ar-SA": "ساعات بعد ما تخلص المناسبة"
+    },
+    "create.reveal.hoursLabel": {
+      "en": "Select hours delay",
+      "ar-LB": "اختر عدد ساعات التأخير"
+    },
+    "create.cover.title": {
+      "en": "Design your event invitation card.",
+      "ar-LB": "صمّم بطاقة دعوة مناسبتك.",
+      "ar-SA": "صمّم كرت دعوة مناسبتك."
+    },
+    "create.cover.body": {
+      "en": "This cover is the first thing guests see\nwhen they are invited to your event.",
+      "ar-LB": "هذا الغلاف أول ما يراه الضيوف\nعند دعوتهم إلى مناسبتك.",
+      "ar-SA": "هذا الغلاف أول شي بيشوفونه الضيوف\nلما تعزمهم على مناسبتك."
+    },
+    "create.cover.add": {
+      "en": "Add cover image",
+      "ar-LB": "أضف صورة الغلاف",
+      "ar-SA": "حط صورة غلاف"
+    },
+    "create.cover.edit": {
+      "en": "Edit cover image",
+      "ar-LB": "تغيير صورة الغلاف",
+      "ar-SA": "غيّر صورة الغلاف"
+    },
+    "create.cover.optional": {
+      "en": "Optional — skip it and your guests see the default above.",
+      "ar-LB": "اختياري — تخطّه وسيرى ضيوفك الغلاف الافتراضي أعلاه.",
+      "ar-SA": "اختياري — تجاوزه وبيشوف ضيوفك الغلاف الافتراضي فوق."
+    },
+    "create.cover.invitedBy": {
+      "en": "Invited by {name}",
+      "ar-LB": "بدعوة من {name}",
+      "ar-SA": "عزيمة من {name}"
+    },
+    "create.cover.theHost": {
+      "en": "the host",
+      "ar-LB": "المضيف",
+      "ar-SA": "صاحب المناسبة"
+    },
+    "create.cover.yourEventName": {
+      "en": "Your event's name",
+      "ar-LB": "اسم مناسبتك"
+    },
+    "create.cover.enterName": {
+      "en": "Enter your name",
+      "ar-LB": "أدخل اسمك",
+      "ar-SA": "اكتب اسمك"
+    },
+    "create.cover.takeCamera": {
+      "en": "Take your camera →",
+      "ar-LB": "خذ كاميرتك ←",
+      "ar-SA": "خذ كاميرتك ←"
+    },
+    "create.guests.title": {
+      "en": "How many guests for your event?",
+      "en-LB": "Kam dayf 3andak?",
+      "ar-LB": "كم ضيفاً في مناسبتك؟",
+      "ar-SA": "كم ضيف بمناسبتك؟"
+    },
+    "create.guests.body": {
+      "en": "Make sure all guests have a chance to take\nthe most amazing photo from your event.",
+      "ar-LB": "تأكّد من أن لكل ضيف فرصة لالتقاط\nأجمل صورة من مناسبتك.",
+      "ar-SA": "خلّ كل ضيف ياخذ فرصته\nيصوّر أحلى لقطة من مناسبتك."
+    },
+    "create.guests.upTo": {
+      "en": "Up to\n{count} Participants",
+      "ar-LB": "حتى\n{count} مشارك"
+    },
+    "create.guests.unlimited": {
+      "en": "Unlimited\nParticipants",
+      "ar-LB": "مشاركون\nبلا حدود",
+      "ar-SA": "مشاركين\nبلا حدود"
+    },
+    "create.guests.upToLabel": {
+      "en": "Up to {count} participants",
+      "ar-LB": "حتى {count} مشارك"
+    },
+    "create.guests.unlimitedLabel": {
+      "en": "Unlimited participants",
+      "ar-LB": "مشاركون بلا حدود"
+    },
+    "create.guests.contactUs": {
+      "en": "Contact us",
+      "ar-LB": "تواصل معنا"
+    },
+    "create.shots.label": {
+      "en": "Shots per person",
+      "ar-LB": "عدد اللقطات لكل شخص",
+      "ar-SA": "كم لقطة للشخص"
+    },
+    "create.shots.unlimitedTitle": {
+      "en": "Infinite shots for everyone",
+      "ar-LB": "لقطات بلا حدود للجميع",
+      "ar-SA": "لقطات بلا حدود للكل"
+    },
+    "create.shots.unlimitedBody": {
+      "en": "To never miss any special moments!",
+      "ar-LB": "حتى لا تفوتكم أي لحظة مميّزة!",
+      "ar-SA": "عشان ما تفوتكم ولا لحظة!"
+    },
+    "create.shots.onlyPrice": {
+      "en": "Only {price}",
+      "ar-LB": "فقط {price}",
+      "ar-SA": "بس {price}"
+    },
+    "create.visibility.label": {
+      "en": "Visibility permissions",
+      "ar-LB": "صلاحيات الظهور",
+      "ar-SA": "صلاحيات الرؤية"
+    },
+    "create.visibility.everyone": {
+      "en": "Everyone can see all photos.",
+      "ar-LB": "يستطيع الجميع رؤية كل الصور.",
+      "ar-SA": "الكل يقدر يشوف كل الصور."
+    },
+    "create.visibility.hostOnly": {
+      "en": "Only host can see all photos.",
+      "ar-LB": "المضيف وحده يرى كل الصور.",
+      "ar-SA": "بس صاحب المناسبة يشوف كل الصور."
+    },
+    "create.goToStep": {
+      "en": "Go to step {number}",
+      "ar-LB": "اذهب إلى الخطوة {number}"
+    },
+    "event.loading": {
+      "en": "Developing your photos…",
+      "ar-LB": "جاري تحميض صورك…",
+      "ar-SA": "نحمّض صورك…"
+    },
+    "event.notFound.title": {
+      "en": "Nothing here",
+      "ar-LB": "لا شيء هنا",
+      "ar-SA": "ما فيه شي هنا"
+    },
+    "event.notFound.body": {
+      "en": "This event doesn't exist or was deleted.",
+      "ar-LB": "هذه المناسبة غير موجودة أو تم حذفها.",
+      "ar-SA": "هذي المناسبة ما هي موجودة أو انحذفت."
+    },
+    "event.notFound.back": {
+      "en": "Back to events",
+      "ar-LB": "العودة إلى المناسبات",
+      "ar-SA": "ارجع للمناسبات"
+    },
+    "event.stats.moments": {
+      "en": "Moments",
+      "ar-LB": "لحظات"
+    },
+    "event.stats.status": {
+      "en": "Status",
+      "ar-LB": "الحالة"
+    },
+    "event.stats.people": {
+      "en": "People",
+      "ar-LB": "أشخاص"
+    },
+    "event.status.live": {
+      "en": "Live",
+      "ar-LB": "جارية",
+      "ar-SA": "شغّالة"
+    },
+    "event.joinedCount": {
+      "en": {
+        "one": "{count} joined",
+        "other": "{count} joined"
+      },
+      "ar-LB": {
+        "zero": "لم ينضم أحد",
+        "one": "انضم شخص واحد",
+        "two": "انضم شخصان",
+        "few": "انضم {count} أشخاص",
+        "many": "انضم {count} شخصاً",
+        "other": "انضم {count} شخص"
+      },
+      "ar-SA": {
+        "zero": "ما انضم أحد",
+        "one": "انضم شخص واحد",
+        "two": "انضم شخصين",
+        "few": "انضم {count} أشخاص",
+        "many": "انضم {count} شخص",
+        "other": "انضم {count} شخص"
+      }
+    },
+    "event.invite": {
+      "en": "Invite",
+      "en-LB": "Invite",
+      "ar-LB": "دعوة",
+      "ar-SA": "عزيمة"
+    },
+    "event.shareEvent": {
+      "en": "Share event",
+      "ar-LB": "مشاركة المناسبة",
+      "ar-SA": "شارك المناسبة"
+    },
+    "event.templates": {
+      "en": "Templates",
+      "ar-LB": "البطاقات"
+    },
+    "event.camera": {
+      "en": "Camera",
+      "ar-LB": "الكاميرا"
+    },
+    "event.ended": {
+      "en": "Event ended",
+      "ar-LB": "انتهت المناسبة",
+      "ar-SA": "خلصت المناسبة"
+    },
+    "event.settings": {
+      "en": "Settings",
+      "ar-LB": "الإعدادات"
+    },
+    "event.backToEvents": {
+      "en": "Back to events",
+      "ar-LB": "العودة إلى المناسبات"
+    },
+    "event.revealsOn": {
+      "en": "Reveals on {moment}",
+      "ar-LB": "تُكشف في {moment}",
+      "ar-SA": "تنكشف في {moment}"
+    },
+    "event.revealsSoon": {
+      "en": "soon",
+      "ar-LB": "قريباً",
+      "ar-SA": "قريب"
+    },
+    "event.noMoments": {
+      "en": "No moments captured yet.",
+      "en-LB": "Ma fi shi msawwar lissa.",
+      "ar-LB": "لم تُلتقط أي لحظة بعد.",
+      "ar-SA": "ما انصوّرت ولا لحظة لين الحين."
+    },
+    "event.you": {
+      "en": "You",
+      "ar-LB": "أنت"
+    },
+    "event.hidden": {
+      "en": "Hidden",
+      "ar-LB": "مخفية"
+    },
+    "pay.title": {
+      "en": "How would you like to pay?",
+      "en-LB": "Kif badak tedfa3?",
+      "ar-LB": "كيف تودّ الدفع؟",
+      "ar-SA": "كيف تبي تدفع؟"
+    },
+    "pay.body": {
+      "en": "Your event goes live the moment the payment clears.",
+      "ar-LB": "تبدأ مناسبتك فور إتمام الدفع.",
+      "ar-SA": "مناسبتك تشتغل أول ما يتم الدفع."
+    },
+    "pay.total": {
+      "en": "Total",
+      "ar-LB": "المجموع",
+      "ar-SA": "الإجمالي"
+    },
+    "pay.method": {
+      "en": "Payment method",
+      "ar-LB": "طريقة الدفع"
+    },
+    "pay.whish.name": {
+      "en": "Whish Money",
+      "ar-LB": "Whish Money"
+    },
+    "pay.whish.detail": {
+      "en": "Pay from your Whish wallet or a linked account.",
+      "ar-LB": "ادفع من محفظة Whish أو من حساب مرتبط بها.",
+      "ar-SA": "ادفع من محفظة Whish أو من حساب مربوط فيها."
+    },
+    "pay.card.name": {
+      "en": "Credit card",
+      "ar-LB": "بطاقة ائتمان",
+      "ar-SA": "بطاقة ائتمانية"
+    },
+    "pay.card.detail": {
+      "en": "Visa, Mastercard and Amex.",
+      "ar-LB": "فيزا وماستركارد وأمريكان إكسبرس."
+    },
+    "pay.unsupported": {
+      "en": "Currently unsupported",
+      "ar-LB": "غير متاح حالياً",
+      "ar-SA": "غير متوفر حالياً"
+    },
+    "pay.continue": {
+      "en": "Continue to payment",
+      "ar-LB": "المتابعة إلى الدفع",
+      "ar-SA": "كمّل للدفع"
+    },
+    "pay.createAndPay": {
+      "en": "Create & pay",
+      "ar-LB": "إنشاء ودفع",
+      "ar-SA": "سوّها وادفع"
+    },
+    "pay.busy": {
+      "en": "Just a moment…",
+      "ar-LB": "لحظة واحدة…",
+      "ar-SA": "لحظة…"
+    },
+    "pay.secureNote": {
+      "en": "You'll finish paying on Whish's own secure page.",
+      "ar-LB": "ستُتمّ الدفع على صفحة Whish الآمنة.",
+      "ar-SA": "بتكمّل الدفع على صفحة Whish الآمنة."
+    },
+    "pay.almostThere": {
+      "en": "Almost there",
+      "en-LB": "2reebna",
+      "ar-LB": "أوشكنا على الانتهاء",
+      "ar-SA": "قربنا"
+    },
+    "pay.completeBody": {
+      "en": "Complete payment to activate \"{name}\". Guests can't join or take a single shot until you do.",
+      "ar-LB": "أتمم الدفع لتفعيل «{name}». لا يستطيع الضيوف الانضمام أو التقاط أي صورة قبل ذلك.",
+      "ar-SA": "كمّل الدفع عشان تفعّل «{name}». الضيوف ما يقدرون يدخلون ولا يصوّرون قبل كذا."
+    },
+    "pay.complete": {
+      "en": "Complete payment",
+      "ar-LB": "أتمم الدفع",
+      "ar-SA": "كمّل الدفع"
+    },
+    "pay.unreachable": {
+      "en": "We couldn't reach the payment provider. Try again in a moment.",
+      "ar-LB": "تعذّر الوصول إلى مزوّد الدفع. حاول بعد قليل.",
+      "ar-SA": "ما قدرنا نوصل لمزوّد الدفع. جرّب بعد شوي."
+    },
+    "pay.confirming": {
+      "en": "Confirming your payment…",
+      "ar-LB": "جاري تأكيد دفعتك…",
+      "ar-SA": "نتأكد من دفعتك…"
+    },
+    "pay.failedTitle": {
+      "en": "That payment didn't go through",
+      "ar-LB": "لم تتم عملية الدفع",
+      "ar-SA": "الدفعة ما تمت"
+    },
+    "pay.unconfirmedTitle": {
+      "en": "We couldn't confirm it yet",
+      "ar-LB": "لم نتمكّن من التأكيد بعد",
+      "ar-SA": "ما قدرنا نتأكد لين الحين"
+    },
+    "pay.failedBody": {
+      "en": "Nothing was charged. You can start the payment again from the event.",
+      "ar-LB": "لم يُخصم أي مبلغ. يمكنك إعادة الدفع من صفحة المناسبة.",
+      "ar-SA": "ما انخصم شي. تقدر تعيد الدفع من صفحة المناسبة."
+    },
+    "pay.failedBodyNamed": {
+      "en": "Nothing was charged for \"{name}\". You can start the payment again from the event.",
+      "ar-LB": "لم يُخصم أي مبلغ مقابل «{name}». يمكنك إعادة الدفع من صفحة المناسبة.",
+      "ar-SA": "ما انخصم شي على «{name}». تقدر تعيد الدفع من صفحة المناسبة."
+    },
+    "pay.unconfirmedBody": {
+      "en": "Your payment may still be processing. Open the event and it will activate itself as soon as it clears — you won't be charged twice.",
+      "ar-LB": "قد تكون دفعتك قيد المعالجة. افتح المناسبة وستُفعَّل تلقائياً فور إتمام الدفع — ولن يُخصم منك مرتين.",
+      "ar-SA": "يمكن دفعتك لسه تحت المعالجة. افتح المناسبة وبتتفعّل لحالها أول ما تتم — وما بينخصم منك مرتين."
+    },
+    "pay.openEvent": {
+      "en": "Open the event",
+      "ar-LB": "افتح المناسبة"
+    },
+    "pay.myEvents": {
+      "en": "My events",
+      "ar-LB": "مناسباتي"
+    },
+    "invitation.loading": {
+      "en": "Unwrapping your invitation…",
+      "ar-LB": "جاري فتح دعوتك…",
+      "ar-SA": "نفتح دعوتك…"
+    },
+    "invitation.invitedBy": {
+      "en": "Invited by {name}",
+      "ar-LB": "بدعوة من {name}",
+      "ar-SA": "عزيمة من {name}"
+    },
+    "invitation.notActivated": {
+      "en": "This event hasn't been activated by its host yet.",
+      "ar-LB": "لم يفعّل المضيف هذه المناسبة بعد.",
+      "ar-SA": "صاحب المناسبة ما فعّلها لين الحين."
+    },
+    "invitation.ended": {
+      "en": "This event has ended, so its camera is closed.",
+      "ar-LB": "انتهت هذه المناسبة، لذا أُغلقت الكاميرا.",
+      "ar-SA": "خلصت المناسبة، فالكاميرا مسكّرة."
+    },
+    "invitation.full": {
+      "en": "This event is full — every spot has been taken.",
+      "ar-LB": "اكتمل العدد في هذه المناسبة.",
+      "ar-SA": "المناسبة كملت — ما بقي مكان."
+    },
+    "invitation.join": {
+      "en": "Take your camera",
+      "en-LB": "Yalla, khod camera",
+      "ar-LB": "خذ كاميرتك",
+      "ar-SA": "خذ كاميرتك"
+    },
+    "invitation.joining": {
+      "en": "Joining…",
+      "ar-LB": "جاري الانضمام…",
+      "ar-SA": "ندخلك…"
+    },
+    "invitation.joinError": {
+      "en": "Couldn't join this event, try again.",
+      "ar-LB": "تعذّر الانضمام إلى هذه المناسبة، حاول مرة أخرى.",
+      "ar-SA": "ما قدرنا ندخلك، جرّب مرة ثانية."
+    },
+    "invitation.shotsAvailable": {
+      "en": {
+        "one": "{count} shot available",
+        "other": "{count} shots available"
+      },
+      "ar-LB": {
+        "one": "لقطة واحدة متاحة",
+        "two": "لقطتان متاحتان",
+        "few": "{count} لقطات متاحة",
+        "many": "{count} لقطة متاحة",
+        "other": "{count} لقطة متاحة"
+      }
+    },
+    "invitation.unlimitedShots": {
+      "en": "Unlimited shots",
+      "ar-LB": "لقطات بلا حدود"
+    },
+    "camera.title": {
+      "en": "Camera",
+      "ar-LB": "الكاميرا"
+    },
+    "camera.backToEvent": {
+      "en": "Back to event",
+      "ar-LB": "العودة إلى المناسبة"
+    },
+    "camera.inviteGuests": {
+      "en": "Invite guests",
+      "ar-LB": "دعوة الضيوف",
+      "ar-SA": "عزيمة الضيوف"
+    },
+    "camera.openGallery": {
+      "en": "Open gallery",
+      "ar-LB": "فتح المعرض"
+    },
+    "camera.takePhoto": {
+      "en": "Take photo",
+      "ar-LB": "التقط صورة",
+      "ar-SA": "صوّر"
+    },
+    "camera.flip": {
+      "en": "Flip camera",
+      "ar-LB": "تبديل الكاميرا",
+      "ar-SA": "بدّل الكاميرا"
+    },
+    "camera.permissionDenied": {
+      "en": "Permission denied. Please refresh and give camera permission.",
+      "ar-LB": "تم رفض الإذن. يُرجى تحديث الصفحة ومنح إذن الكاميرا.",
+      "ar-SA": "الإذن مرفوض. حدّث الصفحة واسمح بالوصول للكاميرا."
+    },
+    "camera.noDevice": {
+      "en": "No camera device accessible. Please connect your camera or try a different browser.",
+      "ar-LB": "لا يمكن الوصول إلى أي كاميرا. وصّل كاميرتك أو جرّب متصفحاً آخر.",
+      "ar-SA": "ما فيه كاميرا متاحة. وصّل كاميرتك أو جرّب متصفح ثاني."
+    },
+    "camera.yourShots": {
+      "en": "Your shots",
+      "ar-LB": "لقطاتك"
+    },
+    "camera.backToCamera": {
+      "en": "Back to camera",
+      "ar-LB": "العودة إلى الكاميرا"
+    },
+    "camera.deleteFailed": {
+      "en": "Delete failed shots",
+      "ar-LB": "حذف اللقطات الفاشلة",
+      "ar-SA": "احذف اللقطات اللي ما طلعت"
+    },
+    "camera.deleteFailedTitle": {
+      "en": "Delete these shots for good",
+      "ar-LB": "حذف هذه اللقطات نهائياً",
+      "ar-SA": "احذف هذي اللقطات نهائياً"
+    },
+    "camera.shotsLeft": {
+      "en": {
+        "one": "{count} shot left",
+        "other": "{count} shots left"
+      },
+      "ar-LB": {
+        "zero": "لا لقطات متبقية",
+        "one": "بقيت لقطة واحدة",
+        "two": "بقيت لقطتان",
+        "few": "بقيت {count} لقطات",
+        "many": "بقيت {count} لقطة",
+        "other": "بقيت {count} لقطة"
+      },
+      "ar-SA": {
+        "zero": "ما بقي لقطات",
+        "one": "باقي لقطة وحدة",
+        "two": "باقي لقطتين",
+        "few": "باقي {count} لقطات",
+        "many": "باقي {count} لقطة",
+        "other": "باقي {count} لقطة"
+      }
+    },
+    "photo.previous": {
+      "en": "Previous photo",
+      "ar-LB": "الصورة السابقة"
+    },
+    "photo.next": {
+      "en": "Next photo",
+      "ar-LB": "الصورة التالية"
+    },
+    "photo.hide": {
+      "en": "Hide",
+      "ar-LB": "إخفاء"
+    },
+    "photo.unhide": {
+      "en": "Unhide",
+      "ar-LB": "إظهار"
+    },
+    "invite.title": {
+      "en": "Invite guests to your event.",
+      "ar-LB": "ادعُ ضيوفك إلى مناسبتك.",
+      "ar-SA": "عازم ضيوفك على مناسبتك."
+    },
+    "invite.body": {
+      "en": "Take a glimpse of your world through their lens. Invite your guests to make this event unforgettable.",
+      "ar-LB": "شاهد عالمك من خلال عدساتهم. ادعُ ضيوفك ليجعلوا هذه المناسبة لا تُنسى.",
+      "ar-SA": "شوف عالمك من عدساتهم. عازم ضيوفك عشان تصير المناسبة ما تنتسى."
+    },
+    "invite.shareLink": {
+      "en": "Share link",
+      "ar-LB": "شارك الرابط"
+    },
+    "invite.saveQr": {
+      "en": "Save QR image",
+      "ar-LB": "احفظ صورة الـQR"
+    },
+    "share.title": {
+      "en": "Share the album.",
+      "ar-LB": "شارك الألبوم.",
+      "ar-SA": "شارك الألبوم."
+    },
+    "share.body": {
+      "en": "Anyone with the link can look through this album and save the photos in full quality — no account, no sign-in, nothing to install.",
+      "ar-LB": "يستطيع أي شخص يملك الرابط تصفّح هذا الألبوم وحفظ الصور بجودتها الكاملة — بلا حساب، بلا تسجيل دخول، وبلا تثبيت أي شيء.",
+      "ar-SA": "أي أحد عنده الرابط يقدر يتصفح الألبوم ويحفظ الصور بجودتها الكاملة — بدون حساب، بدون تسجيل دخول، وبدون ما يثبّت شي."
+    },
+    "share.generate": {
+      "en": "Generate a link",
+      "ar-LB": "أنشئ رابطاً",
+      "ar-SA": "سوّ رابط"
+    },
+    "share.generating": {
+      "en": "Generating…",
+      "ar-LB": "جاري الإنشاء…",
+      "ar-SA": "نسوّيه…"
+    },
+    "share.shareLink": {
+      "en": "Share link",
+      "ar-LB": "شارك الرابط"
+    },
+    "share.newLink": {
+      "en": "New link",
+      "ar-LB": "رابط جديد"
+    },
+    "share.error": {
+      "en": "Couldn't create a link just now.",
+      "ar-LB": "تعذّر إنشاء الرابط الآن.",
+      "ar-SA": "ما قدرنا نسوّي رابط الحين."
+    },
+    "share.yourTemplate": {
+      "en": "Your template",
+      "ar-LB": "بطاقتك"
+    },
+    "settings.title": {
+      "en": "Event Settings",
+      "ar-LB": "إعدادات المناسبة"
+    },
+    "settings.nameAndCover": {
+      "en": "Name & Cover",
+      "ar-LB": "الاسم والغلاف"
+    },
+    "settings.saveName": {
+      "en": "Save name",
+      "ar-LB": "حفظ الاسم"
+    },
+    "settings.changeCover": {
+      "en": "Change cover",
+      "ar-LB": "تغيير الغلاف",
+      "ar-SA": "غيّر الغلاف"
+    },
+    "settings.uploading": {
+      "en": "Uploading…",
+      "ar-LB": "جاري الرفع…",
+      "ar-SA": "نرفعها…"
+    },
+    "settings.endingDate": {
+      "en": "Ending date",
+      "ar-LB": "تاريخ الانتهاء"
+    },
+    "settings.revealTime": {
+      "en": "Reveal time",
+      "ar-LB": "موعد الكشف"
+    },
+    "settings.participants": {
+      "en": "Participants",
+      "ar-LB": "المشاركون"
+    },
+    "settings.shotsPerPerson": {
+      "en": "Shots per person",
+      "ar-LB": "اللقطات لكل شخص"
+    },
+    "settings.unlimited": {
+      "en": "Unlimited",
+      "ar-LB": "بلا حدود"
+    },
+    "settings.upTo": {
+      "en": "Up to {count} participants",
+      "ar-LB": "حتى {count} مشارك"
+    },
+    "settings.notSet": {
+      "en": "Not set",
+      "ar-LB": "غير محدّد"
+    },
+    "settings.everyoneSees": {
+      "en": "Everyone can see all photos",
+      "ar-LB": "يستطيع الجميع رؤية كل الصور",
+      "ar-SA": "الكل يشوف كل الصور"
+    },
+    "settings.delete": {
+      "en": "Delete",
+      "ar-LB": "حذف"
+    },
+    "settings.deleting": {
+      "en": "Deleting…",
+      "ar-LB": "جاري الحذف…"
+    },
+    "settings.deleteConfirm": {
+      "en": "Delete \"{name}\"? This can't be undone.",
+      "ar-LB": "هل تريد حذف «{name}»؟ لا يمكن التراجع عن ذلك.",
+      "ar-SA": "تبي تحذف «{name}»؟ ما فيه رجعة."
+    },
+    "settings.saveError": {
+      "en": "That change couldn't be saved.",
+      "ar-LB": "تعذّر حفظ هذا التغيير.",
+      "ar-SA": "ما انحفظ التغيير."
+    },
+    "settings.coverError": {
+      "en": "That cover couldn't be uploaded.",
+      "ar-LB": "تعذّر رفع صورة الغلاف.",
+      "ar-SA": "ما قدرنا نرفع الغلاف."
+    },
+    "settings.deleteError": {
+      "en": "That event couldn't be deleted.",
+      "ar-LB": "تعذّر حذف هذه المناسبة.",
+      "ar-SA": "ما قدرنا نحذف المناسبة."
+    },
+    "templates.title": {
+      "en": "Your event templates.",
+      "ar-LB": "بطاقات مناسبتك.",
+      "ar-SA": "كروت مناسبتك."
+    },
+    "templates.body": {
+      "en": "A printable card your guests can scan to join — set the wording, then download it or send it to your printer.",
+      "ar-LB": "بطاقة قابلة للطباعة يمسحها ضيوفك للانضمام — اضبط النص ثم نزّلها أو أرسلها إلى الطابعة.",
+      "ar-SA": "كرت تطبعه ويمسحه ضيوفك عشان يدخلون — عدّل النص وبعدين نزّله أو ارسله للطابعة."
+    },
+    "templates.loading": {
+      "en": "Loading cards…",
+      "ar-LB": "جاري تحميل البطاقات…",
+      "ar-SA": "نحمّل الكروت…"
+    },
+    "templates.loadError": {
+      "en": "Couldn't load your templates.",
+      "ar-LB": "تعذّر تحميل بطاقاتك.",
+      "ar-SA": "ما قدرنا نحمّل كروتك."
+    },
+    "templates.saveError": {
+      "en": "Couldn't save your template.",
+      "ar-LB": "تعذّر حفظ بطاقتك.",
+      "ar-SA": "ما قدرنا نحفظ كرتك."
+    },
+    "templates.none": {
+      "en": "There are no templates for this kind of event yet.\nWe're adding more — check back before your event.",
+      "ar-LB": "لا توجد بطاقات لهذا النوع من المناسبات بعد.\nنضيف المزيد — عد إلينا قبل مناسبتك.",
+      "ar-SA": "ما فيه كروت لهذا النوع لين الحين.\nنضيف جديد — ارجع قبل مناسبتك."
+    },
+    "templates.label": {
+      "en": "Template",
+      "ar-LB": "البطاقة",
+      "ar-SA": "الكرت"
+    },
+    "templates.setUpBody": {
+      "en": "{name} — a printable card carrying the QR code that brings your guests straight into the event.",
+      "ar-LB": "{name} — بطاقة قابلة للطباعة تحمل رمز QR يُدخل ضيوفك مباشرة إلى المناسبة.",
+      "ar-SA": "{name} — كرت تطبعه فيه رمز QR يدخّل ضيوفك على طول للمناسبة."
+    },
+    "templates.setUp": {
+      "en": "Set up this template",
+      "ar-LB": "إعداد هذه البطاقة",
+      "ar-SA": "جهّز هذا الكرت"
+    },
+    "templates.create": {
+      "en": "Create template",
+      "ar-LB": "إنشاء البطاقة",
+      "ar-SA": "سوّ الكرت"
+    },
+    "templates.saveRedraw": {
+      "en": "Save & redraw",
+      "ar-LB": "حفظ وإعادة الرسم",
+      "ar-SA": "احفظ وأعد الرسم"
+    },
+    "templates.readOnly": {
+      "en": "This event has ended, so its template can't be changed — but you can still download it.",
+      "ar-LB": "انتهت هذه المناسبة، لذا لا يمكن تغيير بطاقتها — لكن يمكنك تنزيلها.",
+      "ar-SA": "خلصت المناسبة، فما تقدر تغيّر الكرت — بس تقدر تنزّله."
+    },
+    "templates.preview": {
+      "en": "{name} preview",
+      "ar-LB": "معاينة {name}"
+    },
+    "templates.pickType": {
+      "en": "Tell us what kind of event this is and we'll show you the templates that suit it.",
+      "ar-LB": "أخبرنا بنوع هذه المناسبة وسنعرض لك البطاقات المناسبة لها.",
+      "ar-SA": "قل لنا وش نوع المناسبة ونعرض لك الكروت اللي تناسبها."
+    },
+    "templates.addImage": {
+      "en": "Add image",
+      "ar-LB": "أضف صورة",
+      "ar-SA": "حط صورة"
+    },
+    "templates.replaceImage": {
+      "en": "Replace image",
+      "ar-LB": "استبدل الصورة",
+      "ar-SA": "غيّر الصورة"
+    },
+    "account.title": {
+      "en": "Account",
+      "ar-LB": "الحساب"
+    },
+    "account.loading": {
+      "en": "Opening your account…",
+      "ar-LB": "جاري فتح حسابك…",
+      "ar-SA": "نفتح حسابك…"
+    },
+    "account.guestBody": {
+      "en": "You're shooting as a guest. Sign in to keep your events and photos across devices, and to see your payment history here.",
+      "ar-LB": "أنت تصوّر كضيف. سجّل الدخول للاحتفاظ بمناسباتك وصورك على كل أجهزتك، ولرؤية سجلّ مدفوعاتك هنا.",
+      "ar-SA": "أنت تصوّر كضيف. سجّل دخول عشان تحتفظ بمناسباتك وصورك على كل أجهزتك، وتشوف سجل مدفوعاتك هنا."
+    },
+    "account.unnamed": {
+      "en": "Unnamed",
+      "ar-LB": "بلا اسم",
+      "ar-SA": "بدون اسم"
+    },
+    "account.details": {
+      "en": "Details",
+      "ar-LB": "التفاصيل"
+    },
+    "account.displayName": {
+      "en": "Display name",
+      "ar-LB": "الاسم الظاهر"
+    },
+    "account.email": {
+      "en": "Email",
+      "ar-LB": "البريد الإلكتروني"
+    },
+    "account.joined": {
+      "en": "Joined",
+      "ar-LB": "تاريخ الانضمام"
+    },
+    "account.password": {
+      "en": "Password",
+      "ar-LB": "كلمة المرور"
+    },
+    "account.managedByGoogle": {
+      "en": "Managed by Google",
+      "ar-LB": "يديرها Google"
+    },
+    "account.sendReset": {
+      "en": "Send a reset link",
+      "ar-LB": "أرسل رابط إعادة التعيين",
+      "ar-SA": "ارسل رابط إعادة التعيين"
+    },
+    "account.sending": {
+      "en": "Sending…",
+      "ar-LB": "جاري الإرسال…",
+      "ar-SA": "نرسله…"
+    },
+    "account.resetError": {
+      "en": "Couldn't send that link, try again.",
+      "ar-LB": "تعذّر إرسال الرابط، حاول مرة أخرى.",
+      "ar-SA": "ما انرسل الرابط، جرّب مرة ثانية."
+    },
+    "account.payments": {
+      "en": "Payments",
+      "ar-LB": "المدفوعات"
+    },
+    "account.loadingReceipts": {
+      "en": "Finding your receipts…",
+      "ar-LB": "جاري البحث عن إيصالاتك…",
+      "ar-SA": "نلقى إيصالاتك…"
+    },
+    "account.noPayments": {
+      "en": "No payments yet. Free events never reach checkout, so this stays empty until you buy a larger one.",
+      "ar-LB": "لا مدفوعات بعد. المناسبات المجانية لا تمرّ بالدفع، لذا تبقى هذه القائمة فارغة حتى تشتري مناسبة أكبر.",
+      "ar-SA": "ما فيه مدفوعات. المناسبات المجانية ما تمر على الدفع، فتضل القائمة فاضية لين تشتري وحدة أكبر."
+    },
+    "account.deletedEvent": {
+      "en": "Deleted event",
+      "ar-LB": "مناسبة محذوفة"
+    },
+    "account.dangerZone": {
+      "en": "Danger zone",
+      "ar-LB": "منطقة الخطر"
+    },
+    "account.closeAccount": {
+      "en": "Close account",
+      "ar-LB": "إغلاق الحساب",
+      "ar-SA": "سكّر الحساب"
+    },
+    "account.permanent": {
+      "en": "Permanent",
+      "ar-LB": "نهائي"
+    },
+    "account.closeNote": {
+      "en": "Closing your account hides it and everything you created — your events, your photos, and the albums your guests were sharing.",
+      "ar-LB": "إغلاق حسابك يخفيه ويخفي كل ما أنشأته — مناسباتك وصورك والألبومات التي كان يشاركها ضيوفك.",
+      "ar-SA": "لما تسكّر حسابك بيختفي هو وكل اللي سويته — مناسباتك وصورك والألبومات اللي كان يشاركها ضيوفك."
+    },
+    "account.closeTitle": {
+      "en": "Close your account?",
+      "ar-LB": "هل تريد إغلاق حسابك؟",
+      "ar-SA": "تبي تسكّر حسابك؟"
+    },
+    "account.closeBody": {
+      "en": "Your events and every photo in them stop being reachable, for you and for your guests. This can't be undone from the app.",
+      "ar-LB": "لن تعود مناسباتك ولا أي صورة فيها قابلة للوصول، لا لك ولا لضيوفك. ولا يمكن التراجع عن ذلك من التطبيق.",
+      "ar-SA": "مناسباتك وكل صورة فيها ما بتصير متاحة، لا لك ولا لضيوفك. وما فيه رجعة من التطبيق."
+    },
+    "account.closing": {
+      "en": "Closing…",
+      "ar-LB": "جاري الإغلاق…",
+      "ar-SA": "نسكّره…"
+    },
+    "account.keepAccount": {
+      "en": "Keep my account",
+      "ar-LB": "احتفظ بحسابي",
+      "ar-SA": "خلّ حسابي"
+    },
+    "account.closeError": {
+      "en": "Couldn't close the account, try again.",
+      "ar-LB": "تعذّر إغلاق الحساب، حاول مرة أخرى.",
+      "ar-SA": "ما قدرنا نسكّر الحساب، جرّب مرة ثانية."
+    },
+    "account.status.success": {
+      "en": "success",
+      "ar-LB": "ناجحة"
+    },
+    "account.status.pending": {
+      "en": "pending",
+      "ar-LB": "قيد المعالجة"
+    },
+    "account.status.failed": {
+      "en": "failed",
+      "ar-LB": "فاشلة"
+    },
+    "reset.title": {
+      "en": "Reset your password",
+      "ar-LB": "إعادة تعيين كلمة المرور"
+    },
+    "reset.heading": {
+      "en": "Choose a new password",
+      "ar-LB": "اختر كلمة مرور جديدة"
+    },
+    "reset.mismatch": {
+      "en": "Those two passwords don't match.",
+      "ar-LB": "كلمتا المرور غير متطابقتين.",
+      "ar-SA": "كلمتين المرور ما تطابقن."
+    },
+    "reset.badLink": {
+      "en": "That link didn't work. It may have expired — ask for a new one from your account page.",
+      "ar-LB": "لم يعمل هذا الرابط. ربما انتهت صلاحيته — اطلب رابطاً جديداً من صفحة حسابك.",
+      "ar-SA": "الرابط ما اشتغل. يمكن انتهت صلاحيته — اطلب واحد جديد من صفحة حسابك."
+    },
+    "reset.newPassword": {
+      "en": "New password",
+      "ar-LB": "كلمة المرور الجديدة"
+    },
+    "reset.confirmPassword": {
+      "en": "Confirm new password",
+      "ar-LB": "تأكيد كلمة المرور الجديدة"
+    },
+    "reset.submit": {
+      "en": "Save new password",
+      "ar-LB": "حفظ كلمة المرور"
+    },
+    "reset.goToAccount": {
+      "en": "Go to my account",
+      "ar-LB": "اذهب إلى حسابي",
+      "ar-SA": "روح لحسابي"
+    },
+    "shared.title": {
+      "en": "Shared album",
+      "ar-LB": "ألبوم مشترك"
+    },
+    "shared.loading": {
+      "en": "Opening the album…",
+      "ar-LB": "جاري فتح الألبوم…",
+      "ar-SA": "نفتح الألبوم…"
+    },
+    "shared.closed": {
+      "en": "This link has closed",
+      "ar-LB": "أُغلق هذا الرابط",
+      "ar-SA": "هذا الرابط مسكّر"
+    },
+    "shared.makeYourOwn": {
+      "en": "Make your own album",
+      "ar-LB": "أنشئ ألبومك الخاص",
+      "ar-SA": "سوّ ألبومك"
+    },
+    "shared.theAlbum": {
+      "en": "The album",
+      "ar-LB": "الألبوم"
+    },
+    "shared.yourTurn": {
+      "en": "Your turn.",
+      "en-LB": "Dawrak hallaq.",
+      "ar-LB": "جاء دورك.",
+      "ar-SA": "دورك الحين."
+    },
+    "shared.createEvent": {
+      "en": "Create an event",
+      "ar-LB": "أنشئ مناسبة",
+      "ar-SA": "سوّ مناسبة"
+    },
+    "error.title": {
+      "en": "Something went sideways.",
+      "en-LB": "Shi gheleb.",
+      "ar-LB": "حدث خطأ غير متوقّع.",
+      "ar-SA": "صار شي غلط."
+    },
+    "error.body": {
+      "en": "An unexpected error has occurred.",
+      "ar-LB": "حدث خطأ غير متوقّع.",
+      "ar-SA": "صار خطأ غير متوقع."
+    },
+    "error.goBack": {
+      "en": "Go back",
+      "ar-LB": "رجوع"
+    },
+    "seo.defaultTitle": {
+      "en": "Sawwerna — a disposable camera for your event",
+      "ar-LB": "صوّرنا — كاميرا لمناسبتك"
+    },
+    "seo.defaultDescription": {
+      "en": "Hand your guests a disposable camera that lives in their browser. They join by QR — no app, no download — and the whole album reveals when the event ends.",
+      "ar-LB": "أعطِ ضيوفك كاميرا تعيش داخل متصفحهم. ينضمّون عبر رمز QR — بلا تطبيق وبلا تحميل — ويُكشف الألبوم كاملاً عند انتهاء المناسبة.",
+      "ar-SA": "اعطِ ضيوفك كاميرا داخل المتصفح. يدخلون عن طريق رمز QR — بدون تطبيق وبدون تحميل — والألبوم كله ينكشف لما تخلص المناسبة."
+    },
+    "common.gotIt": {
+      "en": "Got it",
+      "en-LB": "Tayyeb",
+      "ar-LB": "حسناً",
+      "ar-SA": "تمام"
+    },
+    "event.pageTitle": {
+      "en": "Event",
+      "ar-LB": "مناسبة"
+    },
+    "event.momentFileName": {
+      "en": "moment",
+      "ar-LB": "لحظة"
+    },
+    "photo.hiddenFromOthers": {
+      "en": "Hidden from everyone else",
+      "ar-LB": "مخفية عن الجميع",
+      "ar-SA": "مخفية عن الباقين"
+    },
+    "camera.retry": {
+      "en": "Retry",
+      "ar-LB": "إعادة المحاولة",
+      "ar-SA": "جرّب مرة ثانية"
+    },
+    "camera.failedCount": {
+      "en": {
+        "one": "{count} didn't upload yet",
+        "other": "{count} didn't upload yet"
+      },
+      "ar-LB": {
+        "zero": "لم يُرفع شيء",
+        "one": "لقطة واحدة لم تُرفع",
+        "two": "لقطتان لم تُرفعا",
+        "few": "{count} لقطات لم تُرفع",
+        "many": "{count} لقطة لم تُرفع",
+        "other": "{count} لقطة لم تُرفع"
+      },
+      "ar-SA": {
+        "zero": "ما انرفع شي",
+        "one": "لقطة وحدة ما انرفعت",
+        "two": "لقطتين ما انرفعن",
+        "few": "{count} لقطات ما انرفعن",
+        "many": "{count} لقطة ما انرفعت",
+        "other": "{count} لقطة ما انرفعت"
+      }
+    },
+    "camera.uploadingCount": {
+      "en": {
+        "one": "Uploading {count} shot…",
+        "other": "Uploading {count} shots…"
+      },
+      "ar-LB": {
+        "one": "جاري رفع لقطة واحدة…",
+        "two": "جاري رفع لقطتين…",
+        "few": "جاري رفع {count} لقطات…",
+        "many": "جاري رفع {count} لقطة…",
+        "other": "جاري رفع {count} لقطة…"
+      },
+      "ar-SA": {
+        "one": "نرفع لقطة وحدة…",
+        "two": "نرفع لقطتين…",
+        "few": "نرفع {count} لقطات…",
+        "many": "نرفع {count} لقطة…",
+        "other": "نرفع {count} لقطة…"
+      }
+    },
+    "camera.everyoneSeesOn": {
+      "en": "Everyone sees these on {moment}",
+      "ar-LB": "يراها الجميع في {moment}",
+      "ar-SA": "الكل بيشوفها في {moment}"
+    },
+    "invitation.pageTitle": {
+      "en": "You’re invited",
+      "en-LB": "3am ye3zmouk",
+      "ar-LB": "أنت مدعو",
+      "ar-SA": "أنت معزوم"
+    },
+    "invitation.pageTitleNamed": {
+      "en": "You’re invited to {name}",
+      "ar-LB": "أنت مدعو إلى {name}",
+      "ar-SA": "أنت معزوم على {name}"
+    },
+    "shared.closedBody": {
+      "en": "The album it pointed at is no longer being shared. Ask whoever sent it for a fresh link.",
+      "ar-LB": "لم يعد الألبوم الذي يشير إليه هذا الرابط مُشارَكاً. اطلب رابطاً جديداً ممّن أرسله لك.",
+      "ar-SA": "الألبوم اللي يوديله الرابط ما عاد مشارك. اطلب رابط جديد من اللي أرسله لك."
+    },
+    "shared.makeYourOwnShort": {
+      "en": "Make your own",
+      "ar-LB": "أنشئ ألبومك",
+      "ar-SA": "سوّ ألبومك"
+    },
+    "shared.albumBy": {
+      "en": "An album by {name}",
+      "ar-LB": "ألبوم من {name}",
+      "ar-SA": "ألبوم من {name}"
+    },
+    "shared.noMoments": {
+      "en": "No moments were captured at this one.",
+      "en-LB": "Ma fi shi msawwar hon.",
+      "ar-LB": "لم تُلتقط أي لحظة في هذه المناسبة.",
+      "ar-SA": "ما انصوّرت ولا لحظة بهذي المناسبة."
+    },
+    "shared.yourTurnBody": {
+      "en": "Hand everyone a camera at your next event and see the night through their eyes.",
+      "ar-LB": "أعطِ كل ضيف كاميرا في مناسبتك القادمة وشاهد الليلة من عيونهم.",
+      "ar-SA": "اعطِ كل ضيف كاميرا بمناسبتك الجاية وشوف الليلة من عيونهم."
+    },
+    "pay.pageTitle": {
+      "en": "Payment",
+      "ar-LB": "الدفع"
+    },
+    "camera.notUploaded": {
+      "en": "Not uploaded",
+      "ar-LB": "لم تُرفع",
+      "ar-SA": "ما انرفعت"
+    },
+    "camera.uploading": {
+      "en": "Uploading",
+      "ar-LB": "جاري الرفع",
+      "ar-SA": "يرفع"
+    },
+    "camera.allShotsUsed": {
+      "en": "All shots used",
+      "en-LB": "Khelsit l shots",
+      "ar-LB": "انتهت كل اللقطات",
+      "ar-SA": "خلصت كل اللقطات"
+    },
+    "picker.date": {
+      "en": "Date picker",
+      "ar-LB": "اختيار التاريخ"
+    },
+    "picker.time": {
+      "en": "Time picker",
+      "ar-LB": "اختيار الوقت"
+    },
+    "picker.day": {
+      "en": "Select day",
+      "ar-LB": "اختر اليوم"
+    },
+    "picker.month": {
+      "en": "Select month",
+      "ar-LB": "اختر الشهر"
+    },
+    "picker.year": {
+      "en": "Select year",
+      "ar-LB": "اختر السنة"
+    },
+    "picker.hour": {
+      "en": "Select hour",
+      "ar-LB": "اختر الساعة"
+    },
+    "picker.minute": {
+      "en": "Select minute",
+      "ar-LB": "اختر الدقيقة"
+    },
+    "picker.ampm": {
+      "en": "Select AM or PM",
+      "ar-LB": "اختر صباحاً أو مساءً"
+    }
+  }
+}

@@ -11,6 +11,7 @@ import attachmentsService from "../services/attachments.service";
 import IconButton from "./IconButton.component";
 import Button from "./Button.component";
 import cn from "../utils/cn.util";
+import { useT } from "../contexts/I18n.context";
 import { downloadUrl } from "../utils/download.util";
 
 function extensionFromContentType(contentType) {
@@ -32,6 +33,7 @@ export default function PhotoViewer({
   canHide = false,
   onToggleHidden,
 }) {
+  const t = useT();
   const attachment = attachments?.[index];
   // Keyed by attachment id: a src for a photo we've already stepped past must never
   // be shown for the one now on screen.
@@ -116,7 +118,7 @@ export default function PhotoViewer({
 
   const who =
     attachment.userId === currentUserId
-      ? "You"
+      ? t("event.you")
       : attachment.user?.firstName || "";
 
   return (
@@ -129,7 +131,7 @@ export default function PhotoViewer({
         <span className="text-white/70 text-sm tabular-nums">
           {index + 1} / {count}
         </span>
-        <IconButton variant="overlay" onClick={onClose} aria-label="Close">
+        <IconButton variant="overlay" onClick={onClose} aria-label={t("common.close")}>
           <XIcon size={20} />
         </IconButton>
       </div>
@@ -164,15 +166,15 @@ export default function PhotoViewer({
               key={side}
               type="button"
               onClick={() => onIndexChange(to)}
-              aria-label={side === "left" ? "Previous photo" : "Next photo"}
+              aria-label={side === "left" ? t("photo.previous") : t("photo.next")}
               className={cn(
                 "absolute top-1/2 -translate-y-1/2 size-11 rounded-full cursor-pointer",
                 "bg-white/10 backdrop-blur-sm text-white flex items-center justify-center",
                 "transition-transform active:scale-90",
-                side === "left" ? "left-2" : "right-2",
+                side === "left" ? "start-2" : "end-2",
               )}
             >
-              <Icon size={22} />
+              <Icon size={22} className="rtl:-scale-x-100" />
             </button>
           ) : null,
         )}
@@ -186,7 +188,7 @@ export default function PhotoViewer({
           {attachment.hidden ? (
             <span className="flex flex-row items-center gap-1.5 text-xs text-white/60">
               <EyeOffIcon size={12} />
-              Hidden from everyone else
+              {t("photo.hiddenFromOthers")}
             </span>
           ) : null}
         </span>
@@ -200,7 +202,11 @@ export default function PhotoViewer({
               className="bg-white/15 text-white hover:bg-white/25"
             >
               {attachment.hidden ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
-              {hiding ? "Saving…" : attachment.hidden ? "Unhide" : "Hide"}
+              {hiding
+                ? t("common.saving")
+                : attachment.hidden
+                  ? t("photo.unhide")
+                  : t("photo.hide")}
             </Button>
           ) : null}
 
@@ -211,7 +217,7 @@ export default function PhotoViewer({
             className="bg-white text-foreground shrink-0"
           >
             <DownloadIcon size={16} />
-            {downloading ? "Downloading…" : "Download"}
+            {downloading ? t("common.downloading") : t("common.download")}
           </Button>
         </div>
       </div>

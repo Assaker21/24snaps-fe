@@ -8,6 +8,8 @@ import {
 import Button from "../../../../components/Button.component";
 import SectionLabel from "../../../../components/SectionLabel.component";
 import { useAuth } from "../../../../contexts/Auth.context";
+import { useT } from "../../../../contexts/I18n.context";
+import LanguageSwitcher from "../../../../components/LanguageSwitcher.component";
 import cn from "../../../../utils/cn.util";
 
 // One destination in the footer's nav bar. Styled after the reference's bottom tab
@@ -47,6 +49,7 @@ function FooterLink({ icon, label, to, onClick }) {
 
 export default function FooterSection() {
   const { user, isGuest, setOpen } = useAuth();
+  const t = useT();
 
   return (
     <footer className="bg-surface rounded-t-[2rem] mt-16 px-5 pt-12 pb-9">
@@ -58,18 +61,17 @@ export default function FooterSection() {
         />
 
         <h3 className="font-serif text-3xl max-w-md mt-4">
-          A single day becomes timeless, when remembered together.
+          {t("landing.footer.title")}
         </h3>
 
         <p className="text-[0.95rem] text-muted-foreground leading-snug max-w-md mt-5">
-          Hand your guests a disposable camera that lives in their browser. No
-          download, no account, no photo left on someone else&apos;s phone.
+          {t("landing.footer.body")}
         </p>
 
         <Link to="/events/create" className="self-start mt-7">
           <Button variant="primary" size="lg">
-            Create your event
-            <ArrowRightIcon size={16} />
+            {t("landing.hero.cta")}
+            <ArrowRightIcon size={16} className="rtl:-scale-x-100" />
           </Button>
         </Link>
 
@@ -77,12 +79,12 @@ export default function FooterSection() {
           <FooterLink
             to="/events/create"
             icon={<PlusIcon size={20} />}
-            label="New"
+            label={t("nav.new")}
           />
           <FooterLink
             to="/events"
             icon={<ApertureIcon size={20} />}
-            label="Events"
+            label={t("nav.events")}
           />
           {/* A guest has nothing to show on the account screen yet, so the same slot
               opens the sign-in sheet instead of navigating. */}
@@ -90,22 +92,33 @@ export default function FooterSection() {
             <FooterLink
               onClick={() => setOpen(true)}
               icon={<CircleUserRoundIcon size={20} />}
-              label="Sign in"
+              label={t("nav.signIn")}
             />
           ) : (
             <FooterLink
               to="/account"
               icon={<CircleUserRoundIcon size={20} />}
-              label={user?.firstName || "Account"}
+              label={user?.firstName || t("nav.account")}
             />
           )}
         </div>
 
         <div className="flex flex-row flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border mt-10 pt-6">
           <p className="text-xs text-subtle">
-            © {new Date().getFullYear()} Sawwerna 0.5.1
+            {t("landing.footer.copyright", {
+              year: new Date().getFullYear(),
+              version: "0.5.1",
+            })}
           </p>
-          <p className="text-xs text-subtle italic">No download required.</p>
+
+          {/* The footer is where the switcher lives: every screen reaches the landing
+              page through the wordmark, and putting it in the top bar would crowd the
+              one row that already carries the account chip on a phone. */}
+          <LanguageSwitcher />
+
+          <p className="text-xs text-subtle italic">
+            {t("common.noDownloadRequired")}
+          </p>
         </div>
       </div>
     </footer>

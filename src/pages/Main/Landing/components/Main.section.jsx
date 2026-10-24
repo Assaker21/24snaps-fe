@@ -1,28 +1,31 @@
 import { ArrowRightIcon } from "lucide-react";
 import { Link } from "react-router";
 import Button from "../../../../components/Button.component";
+import { useT } from "../../../../contexts/I18n.context";
 
 export default function MainSection() {
+  const t = useT();
+
   return (
     <div className="flex flex-col items-center justify-center px-6 pt-10">
-      <h1 className="font-serif text-[2.6rem] text-center">
-        Capture <br /> your day through <br /> everyone&apos;s eyes.
+      {/* The line breaks are the designer's, so they live in the copy alongside the
+          words — each language breaks in a different place. */}
+      <h1 className="font-serif text-[2.6rem] text-center whitespace-pre-line">
+        {t("landing.hero.title")}
       </h1>
 
       <p className="text-[0.95rem] text-center leading-snug mt-6 max-w-md text-muted-foreground">
-        Sawwerna is a premium private photo sharing app for events. Guests join
-        via QR (no download), snap memorable photos, and the album reveals after
-        the event.
+        {t("landing.hero.body")}
       </p>
 
       <span className="text-sm italic text-subtle mt-5">
-        No download required.
+        {t("common.noDownloadRequired")}
       </span>
 
       <Link to="/events/create" className="mt-7">
         <Button variant="primary" size="lg">
-          Create your event
-          <ArrowRightIcon size={16} />
+          {t("landing.hero.cta")}
+          <ArrowRightIcon size={16} className="rtl:-scale-x-100" />
         </Button>
       </Link>
 
@@ -39,7 +42,7 @@ export default function MainSection() {
         height={1716}
         fetchPriority="high"
         decoding="async"
-        alt="Two phones showing a Sawwerna album: a wedding cover with the moment count and countdown, and the in-browser camera mid-shot."
+        alt={t("landing.hero.imageAlt")}
         className="rotate-12 w-[115%] mt-14 mb-16 max-w-200 h-auto"
       />
     </div>

@@ -4,16 +4,30 @@
    round trip behind the first paint. */
 @import "tailwindcss";
 
+/* Every url() below is root-absolute ("/fonts/..."), and has to stay that way.
+   These files live in public/, which is served from the root — but a relative
+   url() in CSS resolves against the *stylesheet*, and the built stylesheet ships
+   as /assets/index-<hash>.css. So "fonts/x.otf" asked for /assets/fonts/x.otf,
+   which the SPA fallback answers with index.html: the browser gets HTML where it
+   expects a font, and the face silently never loads. It went unnoticed because
+   the Beirut faces list local() first and were installed on the machine this was
+   written on, and Hagrid had the cdnfonts "Hagrid Trial" in index.html behind it. */
+
+@font-face {
+  font-family: "Hagrid";
+  src: url("/fonts/Hagrid Regular.otf") format("opentype");
+}
+
 @font-face {
   font-family: "Beirut Text VF";
-  src: url("fonts/BeirutTextVF-Light.eot");
+  src: url("/fonts/BeirutTextVF-Light.eot");
   src:
     local("Beirut Text VF Regular"),
     local("BeirutTextVF-Light"),
-    url("fonts/BeirutTextVF-Light.eot?#iefix") format("embedded-opentype"),
-    url("fonts/BeirutTextVF-Light.woff2") format("woff2"),
-    url("fonts/BeirutTextVF-Light.woff") format("woff"),
-    url("fonts/BeirutTextVF-Light.ttf") format("truetype");
+    url("/fonts/BeirutTextVF-Light.eot?#iefix") format("embedded-opentype"),
+    url("/fonts/BeirutTextVF-Light.woff2") format("woff2"),
+    url("/fonts/BeirutTextVF-Light.woff") format("woff"),
+    url("/fonts/BeirutTextVF-Light.ttf") format("truetype");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -21,15 +35,15 @@
 
 @font-face {
   font-family: "Beirut Display VF";
-  src: url("fonts/BeirutDisplayVF-LightItalic.eot");
+  src: url("/fonts/BeirutDisplayVF-LightItalic.eot");
   src:
     local("Beirut Display VF Italic"),
     local("BeirutDisplayVF-LightItalic"),
-    url("fonts/BeirutDisplayVF-LightItalic.eot?#iefix")
+    url("/fonts/BeirutDisplayVF-LightItalic.eot?#iefix")
       format("embedded-opentype"),
-    url("fonts/BeirutDisplayVF-LightItalic.woff2") format("woff2"),
-    url("fonts/BeirutDisplayVF-LightItalic.woff") format("woff"),
-    url("fonts/BeirutDisplayVF-LightItalic.ttf") format("truetype");
+    url("/fonts/BeirutDisplayVF-LightItalic.woff2") format("woff2"),
+    url("/fonts/BeirutDisplayVF-LightItalic.woff") format("woff"),
+    url("/fonts/BeirutDisplayVF-LightItalic.ttf") format("truetype");
   font-weight: 300;
   font-style: italic;
   font-display: swap;
@@ -37,14 +51,15 @@
 
 @font-face {
   font-family: "Beirut Text VF";
-  src: url("fonts/BeirutTextVF-LightItalic.eot");
+  src: url("/fonts/BeirutTextVF-LightItalic.eot");
   src:
     local("Beirut Text VF Italic"),
     local("BeirutTextVF-LightItalic"),
-    url("fonts/BeirutTextVF-LightItalic.eot?#iefix") format("embedded-opentype"),
-    url("fonts/BeirutTextVF-LightItalic.woff2") format("woff2"),
-    url("fonts/BeirutTextVF-LightItalic.woff") format("woff"),
-    url("fonts/BeirutTextVF-LightItalic.ttf") format("truetype");
+    url("/fonts/BeirutTextVF-LightItalic.eot?#iefix")
+      format("embedded-opentype"),
+    url("/fonts/BeirutTextVF-LightItalic.woff2") format("woff2"),
+    url("/fonts/BeirutTextVF-LightItalic.woff") format("woff"),
+    url("/fonts/BeirutTextVF-LightItalic.ttf") format("truetype");
   font-weight: 300;
   font-style: italic;
   font-display: swap;
@@ -52,14 +67,14 @@
 
 @font-face {
   font-family: "Beirut Display VF";
-  src: url("fonts/BeirutDisplayVF-Light.eot");
+  src: url("/fonts/BeirutDisplayVF-Light.eot");
   src:
     local("Beirut Display VF Regular"),
     local("BeirutDisplayVF-Light"),
-    url("fonts/BeirutDisplayVF-Light.eot?#iefix") format("embedded-opentype"),
-    url("fonts/BeirutDisplayVF-Light.woff2") format("woff2"),
-    url("fonts/BeirutDisplayVF-Light.woff") format("woff"),
-    url("fonts/BeirutDisplayVF-Light.ttf") format("truetype");
+    url("/fonts/BeirutDisplayVF-Light.eot?#iefix") format("embedded-opentype"),
+    url("/fonts/BeirutDisplayVF-Light.woff2") format("woff2"),
+    url("/fonts/BeirutDisplayVF-Light.woff") format("woff"),
+    url("/fonts/BeirutDisplayVF-Light.ttf") format("truetype");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -133,4 +148,55 @@
     background-color: var(--color-brand-soft);
     color: var(--color-brand);
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Deliberately outside @layer base: Tailwind's utilities live in a later layer, so
+   a `font-family` set inside base loses to the `font-serif` class on the element.
+   Unlayered rules beat every layered one, which is the only way an RTL override of a
+   utility sticks without an !important.
+   --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   Arabic.
+
+   Neither Outfit nor the Rosemartin/Beirut display family carries Arabic glyphs,
+   so an Arabic locale would otherwise fall back to whatever the device happens to
+   have and the page would change texture entirely. The two faces below are loaded
+   on demand by I18n.context.jsx — only when an Arabic locale is actually in use —
+   and are prepended to the existing stacks rather than replacing them, so Latin
+   text inside an Arabic page (a brand name, an email address) keeps its own type.
+
+   The metrics matter as much as the glyphs: Arabic has no uppercase, sits on a
+   deeper baseline and is unreadable at the negative tracking a Latin display serif
+   wants, so the tight `font-serif` leading is relaxed and the tracked uppercase
+   section labels drop their letter-spacing.
+   --------------------------------------------------------------------------- */
+:root[dir="rtl"] body {
+  font-family: "IBM Plex Sans Arabic", var(--font-sans);
+}
+
+:root[dir="rtl"] .font-serif {
+  font-family: "Hagrid", var(--font-serif);
+  letter-spacing: normal;
+  line-height: 1.45;
+  font-size-adjust: 0.7;
+}
+
+/* `tracking-[0.18em]` on uppercase Latin is a design signature; on Arabic it
+   simply breaks the joins between letters. */
+:root[dir="rtl"] .uppercase {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Arabic needs a little more room between lines than the Latin copy was set at. */
+:root[dir="rtl"] .leading-snug {
+  line-height: 1.6;
+}
+
+/* The wizard's step dots, the photo strip and the countdown all read left-to-right
+   regardless of language — they are positions and numbers, not sentences. */
+:root[dir="rtl"] .ltr-nums {
+  direction: ltr;
+  unicode-bidi: isolate;
 }

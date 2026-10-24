@@ -14,6 +14,8 @@ import OptionTile from "../../../../../components/OptionTile.component";
 import SectionLabel from "../../../../../components/SectionLabel.component";
 import Sheet from "../../../../../components/Sheet.component";
 import cn from "../../../../../utils/cn.util";
+import { eventTypeName } from "../../../../../utils/eventType.util";
+import { useI18n, useT } from "../../../../../contexts/I18n.context";
 import {
   downloadTemplateImage,
   shareTemplateImage,
@@ -75,6 +77,7 @@ const DEFAULT_COLOR = "#2f2e29";
 // file goes to storage through the same presigned route photos use, and what lands in
 // the card's data is the resulting key.
 function Field({ field, value, onChange, disabled, eventId }) {
+  const t = useT();
   const [uploading, setUploading] = useState(false);
   const label = toLabel(field.name);
 
@@ -88,7 +91,7 @@ function Field({ field, value, onChange, disabled, eventId }) {
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
-            "w-full rounded-2xl bg-surface border border-input px-4 py-3",
+            "w-full rounded-2xl bg-surface border border-input px-4 py-3 text-start",
             // 16px exactly: iOS Safari zooms the page in on any focused field
             // smaller than that, and never zooms back out.
             "text-base leading-snug resize-none outline-none",
@@ -162,7 +165,11 @@ function Field({ field, value, onChange, disabled, eventId }) {
           )}
         >
           <ImagePlusIcon size={16} />
-          {uploading ? "Uploading…" : value ? "Replace image" : "Add image"}
+          {uploading
+            ? t("settings.uploading")
+            : value
+              ? t("templates.replaceImage")
+              : t("templates.addImage")}
           <input
             type="file"
             accept="image/*"
@@ -214,6 +221,11 @@ function Field({ field, value, onChange, disabled, eventId }) {
 }
 
 export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
+  const t = useT();
+  // The card is drawn server-side, so the language has to travel with the request —
+  // it decides the wording the catalogue offers, and the fonts and text direction the
+  // image is drawn with.
+  const { locale } = useI18n();
   const [state, setState] = useState(null);
   const [draft, setDraft] = useState({});
   const [picked, setPicked] = useState(null);
@@ -230,7 +242,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
       setDraft(response.data.current?.data ?? {});
       setError(null);
     } else {
-      setError(response.data?.message || "Couldn't load your templates.");
+      setError(response.data?.message || t("templates.loadError"));
     }
   }
 
@@ -240,17 +252,17 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
     if (!open) return;
 
     let cancelled = false;
-    templatesService.getForEvent(event.id).then((response) => {
+    templatesService.getForEvent(event.id, locale).then((response) => {
       if (!cancelled) apply(response);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [open, event.id]);
+  }, [open, event.id, locale]);
 
   const reload = () =>
-    templatesService.getForEvent(event.id).then(apply);
+    templatesService.getForEvent(event.id, locale).then(apply);
 
   const loading = !state && !error;
   const available = state?.available ?? [];
@@ -280,6 +292,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
     const response = await templatesService.save(event.id, {
       templateId: selected.id,
       data: draft,
+      locale,
     });
 
     if (response.ok) {
@@ -289,7 +302,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
       setDraft(response.data.data ?? {});
       onUpdated?.();
     } else {
-      setError(response.data?.message || "Couldn't save your template.");
+      setError(response.data?.message || t("templates.saveError"));
     }
 
     setSaving(false);
@@ -306,7 +319,9 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
   function body() {
     if (loading) {
       return (
-        <p className="text-sm text-subtle text-center mt-10">Loading cards…</p>
+        <p className="text-sm text-subtle text-center mt-10">
+          {t("templates.loading")}
+        </p>
       );
     }
 
@@ -329,9 +344,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
     if (!available.length) {
       return (
         <p className="text-sm text-subtle text-center mt-10 leading-relaxed">
-          There are no templates for this kind of event yet.
-          <br />
-          We're adding more — check back before your event.
+          {t("templates.none")}
         </p>
       );
     }
@@ -341,7 +354,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
         {/* More than one card on offer is a choice worth showing; exactly one isn't. */}
         {available.length > 1 ? (
           <div className="border-t border-border mt-6 pt-6">
-            <SectionLabel>Template</SectionLabel>
+            <SectionLabel>{t("templates.label")}</SectionLabel>
             <div className="grid grid-cols-2 gap-2.5 mt-3">
               {available.map((template) => (
                 <OptionTile
@@ -361,11 +374,10 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
         {!selected ? (
           <div className="border-t border-border mt-6 pt-8 flex flex-col items-center gap-4">
             <p className="text-sm text-muted-foreground text-center max-w-xs">
-              {available[0].name} — a printable card carrying the QR code that
-              brings your guests straight into the event.
+              {t("templates.setUpBody", { name: available[0].name })}
             </p>
             <Button variant="primary" onClick={() => pick(available[0])}>
-              Set up this template
+              {t("templates.setUp")}
             </Button>
           </div>
         ) : (
@@ -377,7 +389,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
                     event.id,
                     current.generatedAt,
                   )}
-                  alt={`${selected.name} preview`}
+                  alt={t("templates.preview", { name: selected.name })}
                   className="w-48 rounded-2xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)]"
                 />
               </div>
@@ -400,8 +412,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
               </div>
             ) : (
               <p className="text-xs text-subtle text-center mt-5">
-                This event has ended, so its template can't be changed — but you
-                can still download it.
+                {t("templates.readOnly")}
               </p>
             )}
 
@@ -413,7 +424,11 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
                   disabled={saving}
                 >
                   <RefreshCwIcon size={16} />
-                  {saving ? "Saving…" : current ? "Save & redraw" : "Create template"}
+                  {saving
+                    ? t("common.saving")
+                    : current
+                      ? t("templates.saveRedraw")
+                      : t("templates.create")}
                 </Button>
               ) : null}
 
@@ -425,7 +440,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
                     disabled={busy}
                   >
                     <DownloadIcon size={16} />
-                    Download
+                    {t("common.download")}
                   </Button>
                   <Button
                     variant="secondary"
@@ -433,7 +448,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
                     disabled={busy}
                   >
                     <Share2Icon size={16} />
-                    Share
+                    {t("common.share")}
                   </Button>
                 </>
               ) : null}
@@ -452,8 +467,8 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
     <Sheet
       open={open}
       setOpen={setOpen}
-      title="Your event templates."
-      description="A printable card your guests can scan to join — set the wording, then download it or send it to your printer."
+      title={t("templates.title")}
+      description={t("templates.body")}
     >
       {body()}
     </Sheet>
@@ -463,6 +478,7 @@ export default function TemplatesSheet({ open, setOpen, event, onUpdated }) {
 // An event from before event types existed has none, and a card can only be offered
 // against one. Setting it here is the same authenticated update the wizard makes.
 function TypePicker({ event, onPicked }) {
+  const t = useT();
   const [types, setTypes] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -484,8 +500,7 @@ function TypePicker({ event, onPicked }) {
   return (
     <div className="border-t border-border mt-6 pt-6">
       <p className="text-sm text-muted-foreground text-center mb-5">
-        Tell us what kind of event this is and we'll show you the templates
-        that suit it.
+        {t("templates.pickType")}
       </p>
       <div className="grid grid-cols-2 gap-2.5">
         {types.map((type) => (
@@ -494,7 +509,7 @@ function TypePicker({ event, onPicked }) {
             onClick={() => !saving && choose(type)}
             className="h-16 text-[0.95rem]"
           >
-            {type.name}
+            {eventTypeName(t, type)}
           </OptionTile>
         ))}
       </div>

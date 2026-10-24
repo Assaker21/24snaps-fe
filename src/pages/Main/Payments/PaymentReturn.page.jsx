@@ -6,6 +6,7 @@ import paymentsService from "../../../services/payments.service";
 import eventsService from "../../../services/events.service";
 import { encodeId } from "../../../utils/idCodec.util";
 import { useAuth } from "../../../contexts/Auth.context";
+import { useT } from "../../../contexts/I18n.context";
 import useSeo from "../../../hooks/useSeo.hook";
 
 // Where Whish sends the payer's browser back to.
@@ -25,7 +26,8 @@ const POLL_INTERVAL_MS = 2000;
 const POLL_ATTEMPTS = 8;
 
 export default function PaymentReturnPage() {
-  useSeo({ title: "Payment" });
+  const t = useT();
+  useSeo({ title: t("pay.pageTitle") });
 
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -91,7 +93,7 @@ export default function PaymentReturnPage() {
   }, [authLoading, purchaseId, declared, navigate]);
 
   if (authLoading || pending) {
-    return <LoadingScreen message="Confirming your payment…" />;
+    return <LoadingScreen message={t("pay.confirming")} />;
   }
 
   const eventLink = purchase?.eventId
@@ -102,25 +104,27 @@ export default function PaymentReturnPage() {
     <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
       <h1 className="font-serif text-3xl">
         {failed && purchase?.status === "failed"
-          ? "That payment didn't go through"
-          : "We couldn't confirm it yet"}
+          ? t("pay.failedTitle")
+          : t("pay.unconfirmedTitle")}
       </h1>
 
       <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
         {purchase?.status === "failed"
-          ? `Nothing was charged${purchase?.eventName ? ` for "${purchase.eventName}"` : ""}. You can start the payment again from the event.`
-          : "Your payment may still be processing. Open the event and it will activate itself as soon as it clears — you won't be charged twice."}
+          ? purchase?.eventName
+            ? t("pay.failedBodyNamed", { name: purchase.eventName })
+            : t("pay.failedBody")
+          : t("pay.unconfirmedBody")}
       </p>
 
       <div className="flex flex-row gap-2.5">
         <Link to={eventLink}>
           <Button variant="primary">
-            {purchase?.eventId ? "Open the event" : "My events"}
+            {purchase?.eventId ? t("pay.openEvent") : t("pay.myEvents")}
           </Button>
         </Link>
         {purchase?.eventId ? (
           <Link to="/events">
-            <Button variant="secondary">My events</Button>
+            <Button variant="secondary">{t("pay.myEvents")}</Button>
           </Link>
         ) : null}
       </div>

@@ -1,6 +1,7 @@
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import * as React from "react";
 import cn from "../../../../../utils/cn.util.js";
+import { useT, useI18n } from "../../../../../contexts/I18n.context";
 
 const ITEM_HEIGHT = 40;
 const VISIBLE_ITEMS = 5;
@@ -313,13 +314,21 @@ const DatePicker = React.forwardRef(
       disabled = false,
       locale,
       className,
+      ariaLabel,
       ...props
     },
     ref,
   ) => {
+    const t = useT();
+    const { formatLocale } = useI18n();
     const config = wheelSizeConfig[size];
 
-    const months = React.useMemo(() => getMonthNames(locale), [locale]);
+    // Falls back to the app's locale rather than the browser's, so an Arabic page
+    // doesn't scroll through English month names.
+    const months = React.useMemo(
+      () => getMonthNames(locale || formatLocale),
+      [locale, formatLocale],
+    );
 
     const years = React.useMemo(() => {
       const arr = [];
@@ -418,7 +427,7 @@ const DatePicker = React.forwardRef(
         )}
         style={{ perspective: "1000px" }}
         role="group"
-        aria-label="Date picker"
+        aria-label={ariaLabel || t("picker.date")}
         {...props}
       >
         <WheelColumn
@@ -429,7 +438,7 @@ const DatePicker = React.forwardRef(
           visibleItems={VISIBLE_ITEMS}
           disabled={disabled}
           className="w-16"
-          ariaLabel="Select day"
+          ariaLabel={t("picker.day")}
         />
 
         <WheelColumn
@@ -440,7 +449,7 @@ const DatePicker = React.forwardRef(
           visibleItems={VISIBLE_ITEMS}
           disabled={disabled}
           className="w-28"
-          ariaLabel="Select month"
+          ariaLabel={t("picker.month")}
         />
 
         <WheelColumn
@@ -451,7 +460,7 @@ const DatePicker = React.forwardRef(
           visibleItems={VISIBLE_ITEMS}
           disabled={disabled}
           className="w-20"
-          ariaLabel="Select year"
+          ariaLabel={t("picker.year")}
         />
       </div>
     );
@@ -470,10 +479,12 @@ const TimePicker = React.forwardRef(
       size = "md",
       disabled = false,
       className,
+      ariaLabel,
       ...props
     },
     ref,
   ) => {
+    const t = useT();
     const config = wheelSizeConfig[size];
 
     const hours = React.useMemo(
@@ -632,7 +643,7 @@ const TimePicker = React.forwardRef(
         )}
         style={{ perspective: "1000px" }}
         role="group"
-        aria-label="Time picker"
+        aria-label={ariaLabel || t("picker.time")}
         {...props}
       >
         <WheelColumn
@@ -643,7 +654,7 @@ const TimePicker = React.forwardRef(
           visibleItems={VISIBLE_ITEMS}
           disabled={disabled}
           className="w-16"
-          ariaLabel="Select hour"
+          ariaLabel={t("picker.hour")}
         />
 
         <WheelColumn
@@ -654,7 +665,7 @@ const TimePicker = React.forwardRef(
           visibleItems={VISIBLE_ITEMS}
           disabled={disabled}
           className="w-16"
-          ariaLabel="Select minute"
+          ariaLabel={t("picker.minute")}
         />
 
         <WheelColumn
@@ -665,7 +676,7 @@ const TimePicker = React.forwardRef(
           visibleItems={VISIBLE_ITEMS}
           disabled={disabled}
           className="w-16"
-          ariaLabel="Select AM/PM"
+          ariaLabel={t("picker.ampm")}
         />
       </div>
     );

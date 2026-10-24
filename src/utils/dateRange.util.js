@@ -1,3 +1,7 @@
+// Superseded by src/i18n/format.js, which takes the app's resolved locale instead
+// of reading the browser's. Kept only so an older import doesn't break; delete once
+// nothing references it.
+
 // The album header's right-hand line: "Jul 8~9, 2026" in the reference. The span is
 // collapsed as far as it can be — a same-day album is one date, a same-month one
 // repeats neither the month nor the year — so the line stays short enough to sit

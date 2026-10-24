@@ -1,20 +1,21 @@
 import { ArrowRightIcon } from "lucide-react";
 import { Link } from "react-router";
 import Button from "../../../../components/Button.component";
+import { useT } from "../../../../contexts/I18n.context";
 
 export default function CallToActionSection() {
+  const t = useT();
+
   return (
     <div className="px-4 pt-16 overflow-hidden flex flex-col items-center text-center">
-      <h2 className="font-serif text-3xl mb-7">
-        Life happens once.
-        <br />
-        Don't let it fade away.
+      <h2 className="font-serif text-3xl mb-7 whitespace-pre-line">
+        {t("landing.cta.title")}
       </h2>
 
       <Link to="/events/create">
         <Button variant="primary" size="lg">
-          Create your event
-          <ArrowRightIcon size={16} />
+          {t("landing.hero.cta")}
+          <ArrowRightIcon size={16} className="rtl:-scale-x-100" />
         </Button>
       </Link>
 

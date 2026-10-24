@@ -3,8 +3,9 @@ import { CreditCardIcon, WalletIcon } from "lucide-react";
 import Button from "./Button.component";
 import Sheet from "./Sheet.component";
 import SectionLabel from "./SectionLabel.component";
+import { useT } from "../contexts/I18n.context";
+import useFormat from "../hooks/useFormat.hook";
 import cn from "../utils/cn.util";
-import { formatPrice } from "../utils/pricing.util";
 
 // How an event gets paid for. Whish Pay is the only processor wired up — the card
 // option is listed because it is the one every host looks for first, and saying
@@ -12,20 +13,8 @@ import { formatPrice } from "../utils/pricing.util";
 // whether we take cards at all. It stays unpressable until there is a processor
 // behind it.
 const METHODS = [
-  {
-    id: "whish",
-    name: "Whish Money",
-    detail: "Pay from your Whish wallet or a linked account.",
-    Icon: WalletIcon,
-    available: true,
-  },
-  {
-    id: "card",
-    name: "Credit card",
-    detail: "Visa, Mastercard and Amex.",
-    Icon: CreditCardIcon,
-    available: false,
-  },
+  { id: "whish", Icon: WalletIcon, available: true },
+  { id: "card", Icon: CreditCardIcon, available: false },
 ];
 
 export default function PaymentSheet({
@@ -35,28 +24,32 @@ export default function PaymentSheet({
   busy,
   error,
   onConfirm,
-  confirmLabel = "Continue to payment",
+  confirmLabelKey = "pay.continue",
 }) {
+  const t = useT();
+  const fmt = useFormat();
   const [method, setMethod] = useState("whish");
 
   return (
     <Sheet
       open={open}
       setOpen={setOpen}
-      title="How would you like to pay?"
-      description="Your event goes live the moment the payment clears."
+      title={t("pay.title")}
+      description={t("pay.body")}
     >
       {price != null ? (
         <div className="flex flex-row items-center justify-between border-t border-border mt-6 pt-6">
-          <SectionLabel>Total</SectionLabel>
-          <span className="font-serif text-3xl">{formatPrice(price)}</span>
+          <SectionLabel>{t("pay.total")}</SectionLabel>
+          <span className="font-serif text-3xl">
+            {price ? fmt.money(price) : t("common.free")}
+          </span>
         </div>
       ) : null}
 
       <div className="flex flex-col gap-2.5 border-t border-border mt-6 pt-6">
-        <SectionLabel>Payment method</SectionLabel>
+        <SectionLabel>{t("pay.method")}</SectionLabel>
 
-        {METHODS.map(({ id, name, detail, Icon, available }) => {
+        {METHODS.map(({ id, Icon, available }) => {
           const selected = available && method === id;
 
           return (
@@ -69,7 +62,7 @@ export default function PaymentSheet({
               aria-pressed={selected}
               onClick={() => setMethod(id)}
               className={cn(
-                "flex flex-row items-center gap-3.5 w-full text-left",
+                "flex flex-row items-center gap-3.5 w-full text-start",
                 "bg-surface border border-transparent rounded-2xl px-4 py-3.5",
                 "transition-[transform,background-color,border-color,color] duration-200 ease-out",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
@@ -83,14 +76,16 @@ export default function PaymentSheet({
               <Icon size={20} className="shrink-0" />
 
               <span className="flex flex-col min-w-0">
-                <span className="text-[0.95rem] font-medium">{name}</span>
+                <span className="text-[0.95rem] font-medium">
+                  {t(`pay.${id}.name`)}
+                </span>
                 <span
                   className={cn(
                     "text-xs mt-0.5",
                     selected ? "text-brand/70" : "text-muted-foreground",
                   )}
                 >
-                  {available ? detail : "Currently unsupported"}
+                  {available ? t(`pay.${id}.detail`) : t("pay.unsupported")}
                 </span>
               </span>
             </button>
@@ -113,12 +108,12 @@ export default function PaymentSheet({
           disabled={busy || !METHODS.some((m) => m.id === method && m.available)}
           onClick={() => onConfirm?.(method)}
         >
-          {busy ? "Just a moment…" : confirmLabel}
+          {busy ? t("pay.busy") : t(confirmLabelKey)}
         </Button>
       </div>
 
       <p className="text-xs text-subtle text-center mt-4">
-        You'll finish paying on Whish's own secure page.
+        {t("pay.secureNote")}
       </p>
     </Sheet>
   );

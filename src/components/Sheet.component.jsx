@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import IconButton from "./IconButton.component";
 import useViewportHeight from "../hooks/useViewportHeight.hook";
 import useKeyboardInset from "../hooks/useKeyboardInset.hook";
+import { useT } from "../contexts/I18n.context";
 import cn from "../utils/cn.util";
 
 // Shared chrome for the bottom sheets (invite, settings, templates, sign-in). The
@@ -46,6 +47,7 @@ export default function Sheet({
   className,
   children,
 }) {
+  const t = useT();
   const viewportHeight = useViewportHeight();
   const keyboardInset = useKeyboardInset();
   const scrollerRef = useRef(null);
@@ -115,7 +117,7 @@ export default function Sheet({
           >
             <div className="max-w-md w-full mx-auto px-5 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))]">
               {onBack ? (
-                <IconButton onClick={onBack} aria-label="Back" className="mt-5">
+                <IconButton onClick={onBack} aria-label={t("common.back")} className="mt-5">
                   <ArrowLeftIcon size={18} />
                 </IconButton>
               ) : null}

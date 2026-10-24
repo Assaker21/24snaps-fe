@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { EyeOffIcon, LoaderCircleIcon, TriangleAlertIcon } from "lucide-react";
 import attachmentsService from "../services/attachments.service";
 import cn from "../utils/cn.util";
+import { useT } from "../contexts/I18n.context";
 
 // Whether this caller may see the sharp version. The server already decided that when
 // it built `urls` — before an event reveals it hands ordinary participants nothing but
@@ -17,6 +18,8 @@ function isSharp(attachment) {
 // showing it made the roll look like it had lost the photo, which is precisely the
 // moment the user is least willing to believe it hasn't.
 function PendingTile({ item }) {
+  const t = useT();
+
   // Made during the first render rather than in an effect, so the tile paints the photo
   // immediately instead of a blank square for one frame. The tile is keyed by item id
   // and an item's blob never changes, so one URL lasts its whole life.
@@ -58,12 +61,12 @@ function PendingTile({ item }) {
         {failed ? (
           <>
             <TriangleAlertIcon size={12} />
-            Not uploaded
+            {t("camera.notUploaded")}
           </>
         ) : (
           <>
             <LoaderCircleIcon size={12} className="animate-spin" />
-            Uploading
+            {t("camera.uploading")}
           </>
         )}
       </span>
@@ -88,6 +91,8 @@ export default function PhotoGrid({
   onOpen,
   className,
 }) {
+  const t = useT();
+
   return (
     <div className={cn("grid grid-cols-2 gap-2.5", className)}>
       {pending.map((item) => (
@@ -125,16 +130,16 @@ export default function PhotoGrid({
             </button>
 
             {attachment.hidden ? (
-              <span className="absolute top-2.5 left-2.5 flex flex-row items-center gap-1.5 rounded-full bg-black/65 backdrop-blur-sm text-white text-[0.7rem] px-2.5 py-1 pointer-events-none">
+              <span className="absolute top-2.5 start-2.5 flex flex-row items-center gap-1.5 rounded-full bg-black/65 backdrop-blur-sm text-white text-[0.7rem] px-2.5 py-1 pointer-events-none">
                 <EyeOffIcon size={12} />
-                Hidden
+                {t("event.hidden")}
               </span>
             ) : null}
 
             {sharp ? (
-              <span className="absolute bottom-2.5 left-3 font-serif italic text-white text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] pointer-events-none">
+              <span className="absolute bottom-2.5 start-3 font-serif italic text-white text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] pointer-events-none">
                 {attachment.userId === currentUserId
-                  ? "You"
+                  ? t("event.you")
                   : attachment.user?.firstName || ""}
               </span>
             ) : null}

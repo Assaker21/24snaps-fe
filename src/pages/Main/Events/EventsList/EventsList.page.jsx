@@ -6,7 +6,8 @@ import Button from "../../../../components/Button.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
 import SectionLabel from "../../../../components/SectionLabel.component";
 import TopBar from "../../../../components/TopBar.component";
-import { formatCountdown } from "../../../../utils/countdown.util";
+import { useT } from "../../../../contexts/I18n.context";
+import useFormat from "../../../../hooks/useFormat.hook";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import { encodeId } from "../../../../utils/idCodec.util";
 import useEffectOnce from "../../../../hooks/useEffectOnce.hook";
@@ -14,6 +15,8 @@ import AlbumRow from "./components/AlbumRow.component";
 import useSeo from "../../../../hooks/useSeo.hook";
 
 function EventRow({ event }) {
+  const t = useT();
+  const fmt = useFormat();
   // Falls back to the shipped default, so a row is never a blank grey square.
   const coverSrc = getCoverSrc(event);
 
@@ -28,11 +31,11 @@ function EventRow({ event }) {
       />
       <div className="flex flex-col min-w-0">
         <span className="font-serif text-xl truncate">
-          {event.name || "Untitled event"}
+          {event.name || t("common.untitledEvent")}
         </span>
         <span className="text-xs text-muted-foreground mt-1">
-          {formatCountdown(event.endAt)} · {event.attachments?.length ?? 0}{" "}
-          moments
+          {fmt.countdown(event.endAt)} ·{" "}
+          {t("events.momentCount", { count: event.attachments?.length ?? 0 })}
         </span>
       </div>
     </Link>
@@ -40,7 +43,8 @@ function EventRow({ event }) {
 }
 
 export default function EventsListPage() {
-  useSeo({ title: "Your events" });
+  const t = useT();
+  useSeo({ title: t("events.title") });
 
   // Split at fetch time rather than during render — "has this event ended yet"
   // depends on the clock, which can't be read while rendering. Ended events are the
@@ -75,25 +79,25 @@ export default function EventsListPage() {
           <Link to="/events/create">
             <Button variant="primary" size="sm">
               <PlusIcon size={16} />
-              New
+              {t("nav.new")}
             </Button>
           </Link>
         }
       />
 
       <div className="px-4 pt-4">
-        <SectionLabel>Active</SectionLabel>
+        <SectionLabel>{t("events.active")}</SectionLabel>
 
         {events === null ? (
-          <LoadingScreen variant="inline" message="Finding your events…" />
+          <LoadingScreen variant="inline" message={t("events.loading")} />
         ) : active.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
             <span className="size-8 rounded-full bg-surface-strong" />
-            <p className="text-sm text-muted-foreground">No active events</p>
+            <p className="text-sm text-muted-foreground">{t("events.empty")}</p>
             <Link to="/events/create">
               <Button variant="brand">
                 <PlusIcon size={16} />
-                Create event
+                {t("events.createEvent")}
               </Button>
             </Link>
           </div>
@@ -108,7 +112,7 @@ export default function EventsListPage() {
 
       {albums.length > 0 ? (
         <div className="px-4 pt-8 mt-4 border-t border-border">
-          <SectionLabel>Albums</SectionLabel>
+          <SectionLabel>{t("events.albums")}</SectionLabel>
           {/* A finished event is an album, and an album is its photos — so these rows
               are the strip from the reference, not the compact tile the active list
               uses. Both come out of the same single GET /events payload. */}

@@ -19,6 +19,8 @@ import eventsService from "../../../../../services/events.service";
 import uploadFile from "../../../../../utils/upload.util";
 import attachmentsService from "../../../../../services/attachments.service";
 import cn from "../../../../../utils/cn.util";
+import { useT } from "../../../../../contexts/I18n.context";
+import useFormat from "../../../../../hooks/useFormat.hook";
 import Calendar from "../../CreateEvent/components/Calendar.component";
 import { TimePicker } from "../../CreateEvent/components/TimePicker.component";
 
@@ -31,7 +33,7 @@ function Row({ icon, label, value, onClick }) {
     <Element
       {...(onClick ? { type: "button", onClick } : {})}
       className={cn(
-        "flex flex-row items-center justify-between gap-3 w-full bg-surface rounded-2xl px-4 py-4 text-left",
+        "flex flex-row items-center justify-between gap-3 w-full bg-surface rounded-2xl px-4 py-4 text-start",
         onClick && "cursor-pointer transition-colors hover:bg-surface-strong",
       )}
     >
@@ -49,6 +51,8 @@ function Row({ icon, label, value, onClick }) {
 
 export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
   const navigate = useNavigate();
+  const t = useT();
+  const fmt = useFormat();
   const [editing, setEditing] = useState(null);
   const [name, setName] = useState(event.name || "");
   const [savingCover, setSavingCover] = useState(false);
@@ -65,7 +69,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
     const response = await eventsService.update(event.id, data);
 
     if (!response.ok) {
-      setError(response.data?.message || "That change couldn't be saved.");
+      setError(response.data?.message || t("settings.saveError"));
       return;
     }
 
@@ -96,7 +100,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
       });
 
       if (!attachmentResponse.ok) {
-        throw new Error(attachmentResponse.data?.message || "Upload refused");
+        throw new Error(attachmentResponse.data?.message || t("settings.coverError"));
       }
 
       const updateResponse = await eventsService.update(event.id, {
@@ -104,13 +108,13 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
       });
 
       if (!updateResponse.ok) {
-        throw new Error(updateResponse.data?.message || "Couldn't set the cover");
+        throw new Error(updateResponse.data?.message || t("settings.coverError"));
       }
 
       onUpdated?.();
     } catch (uploadError) {
       console.warn("Cover upload failed:", uploadError);
-      setError(uploadError.message || "That cover couldn't be uploaded.");
+      setError(uploadError.message || t("settings.coverError"));
     } finally {
       setSavingCover(false);
       // So picking the same file again still fires a change event.
@@ -119,7 +123,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete "${event.name}"? This can't be undone.`)) return;
+    if (!confirm(t("settings.deleteConfirm", { name: event.name }))) return;
 
     setDeleting(true);
     setError(null);
@@ -129,7 +133,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
     // Leaving for the events list on a refusal told the host their album was gone
     // while it was still there — and the list it sent them to would still show it.
     if (!response.ok) {
-      setError(response.data?.message || "That event couldn't be deleted.");
+      setError(response.data?.message || t("settings.deleteError"));
       setDeleting(false);
       return;
     }
@@ -138,22 +142,14 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
   }
 
   const formatMoment = (date) =>
-    date
-      ? new Date(date).toLocaleString([], {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        })
-      : "Not set";
+    date ? fmt.fullMoment(date) : t("settings.notSet");
 
   return (
-    <Sheet open={open} setOpen={setOpen} title="Event Settings">
+    <Sheet open={open} setOpen={setOpen} title={t("settings.title")}>
       <div className="flex flex-col gap-2.5 mt-7">
         <Row
           icon={<PencilIcon size={16} />}
-          label="Name & Cover"
+          label={t("settings.nameAndCover")}
           value={event.name}
           onClick={() => setEditing(editing === "name" ? null : "name")}
         />
@@ -167,7 +163,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
                 size="sm"
                 onClick={() => saveField({ name })}
               >
-                Save name
+                {t("settings.saveName")}
               </Button>
               <label
                 className={cn(
@@ -178,7 +174,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
                 )}
               >
                 <ImagePlusIcon size={16} />
-                {savingCover ? "Uploading…" : "Change cover"}
+                {savingCover ? t("settings.uploading") : t("settings.changeCover")}
                 <input
                   type="file"
                   accept="image/*"
@@ -192,7 +188,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
 
         <Row
           icon={<CalendarIcon size={16} />}
-          label="Ending date"
+          label={t("settings.endingDate")}
           value={formatMoment(event.endAt)}
           onClick={() => setEditing(editing === "endAt" ? null : "endAt")}
         />
@@ -224,7 +220,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
 
         <Row
           icon={<ClockIcon size={16} />}
-          label="Reveal time"
+          label={t("settings.revealTime")}
           value={formatMoment(event.revealAt)}
           onClick={() => setEditing(editing === "revealAt" ? null : "revealAt")}
         />
@@ -256,27 +252,29 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
 
         <Row
           icon={<UserIcon size={16} />}
-          label="Participants"
+          label={t("settings.participants")}
           value={
-            event.maxUsers ? `Up to ${event.maxUsers} participants` : "Unlimited"
+            event.maxUsers
+              ? t("settings.upTo", { count: event.maxUsers })
+              : t("settings.unlimited")
           }
         />
 
         <Row
           icon={<ApertureIcon size={16} />}
-          label="Shots per person"
-          value={event.maxAttachmentsPerUser ?? "Unlimited"}
+          label={t("settings.shotsPerPerson")}
+          value={event.maxAttachmentsPerUser ?? t("settings.unlimited")}
         />
 
         <div className="flex flex-row items-center justify-between gap-3 w-full bg-surface rounded-2xl px-4 py-4">
           <span className="flex flex-row items-center gap-3 text-[0.95rem] font-medium">
             <UnlockIcon size={16} />
-            Everyone can see all photos
+            {t("settings.everyoneSees")}
           </span>
           <Toggle
             checked={!!event.visibilityAll}
             onChange={(next) => saveField({ visibilityAll: next })}
-            label="Everyone can see all photos"
+            label={t("settings.everyoneSees")}
           />
         </div>
 
@@ -292,7 +290,7 @@ export default function SettingsSheet({ open, setOpen, event, onUpdated }) {
           )}
         >
           <TrashIcon size={16} />
-          {deleting ? "Deleting…" : "Delete"}
+          {deleting ? t("settings.deleting") : t("settings.delete")}
         </button>
 
         {error ? (

@@ -14,9 +14,10 @@ import attachmentsService from "../../../services/attachments.service";
 import useUploadQueue from "../../../hooks/useUploadQueue.hook";
 import useViewportHeight from "../../../hooks/useViewportHeight.hook";
 import useTicker from "../../../hooks/useTicker.hook";
+import { useT } from "../../../contexts/I18n.context";
+import useFormat from "../../../hooks/useFormat.hook";
 import { useAuth } from "../../../contexts/Auth.context";
 import { encodeId, tryDecodeId } from "../../../utils/idCodec.util";
-import { formatCountdown } from "../../../utils/countdown.util";
 import cn from "../../../utils/cn.util";
 import InviteSheet from "../Events/ManageEvent/components/InviteSheet.component";
 import GallerySheet from "./components/GallerySheet.component";
@@ -30,16 +31,28 @@ function touchDistance(touches) {
 // The mechanical frame counter, kept from the previous design but reworked for the dark
 // chrome: the live number flanked by the two it sits between.
 function FrameCounter({ remaining }) {
+  const t = useT();
+
   if (remaining === Infinity) {
     return (
-      <div className="flex items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white size-9">
+      <div
+        role="status"
+        aria-label={t("invitation.unlimitedShots")}
+        className="flex items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white size-9"
+      >
         <InfinityIcon size={17} />
       </div>
     );
   }
 
+  // The three numbers are a dial, not a sentence — so the reading is spelled out for
+  // anyone who can't see it.
   return (
-    <div className="flex flex-row items-center justify-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 h-9 font-serif italic text-white">
+    <div
+      role="status"
+      aria-label={t("camera.shotsLeft", { count: remaining })}
+      className="flex flex-row items-center justify-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 h-9 font-serif italic text-white"
+    >
       <span className="text-xs text-white/40">{remaining + 1}</span>
       <span className="text-lg leading-none">{remaining}</span>
       <span className="text-xs text-white/40">{Math.max(0, remaining - 1)}</span>
@@ -51,26 +64,28 @@ function FrameCounter({ remaining }) {
 // It holds its height whether or not it has anything to say, so the deck below never
 // shifts under the user's thumb mid-burst.
 function UploadStatus({ uploadingCount, failedCount, onRetry, onDismiss }) {
+  const t = useT();
+
   return (
     <div className="h-7 flex items-center justify-center">
       {failedCount > 0 ? (
-        <div className="flex flex-row items-center gap-2 rounded-full bg-danger/85 text-white pl-3 pr-1.5 py-1 text-xs">
+        <div className="flex flex-row items-center gap-2 rounded-full bg-danger/85 text-white ps-3 pe-1.5 py-1 text-xs">
           <TriangleAlertIcon size={13} />
-          <span>{failedCount} didn&apos;t upload yet</span>
+          <span>{t("camera.failedCount", { count: failedCount })}</span>
           <button
             type="button"
             onClick={onRetry}
             className="rounded-full bg-white/25 px-2.5 py-0.5 font-medium cursor-pointer"
           >
-            Retry
+            {t("camera.retry")}
           </button>
           {/* The only way to lose a capture on purpose: everything else keeps it and
               retries. Spelled out on hover so it isn't mistaken for "hide this". */}
           <button
             type="button"
             onClick={onDismiss}
-            aria-label="Delete failed shots"
-            title="Delete these shots for good"
+            aria-label={t("camera.deleteFailed")}
+            title={t("camera.deleteFailedTitle")}
             className="px-1.5 py-0.5 text-white/70 cursor-pointer"
           >
             &times;
@@ -79,10 +94,7 @@ function UploadStatus({ uploadingCount, failedCount, onRetry, onDismiss }) {
       ) : uploadingCount > 0 ? (
         <div className="flex flex-row items-center gap-2 rounded-full bg-white/15 backdrop-blur-sm text-white/85 px-3 py-1 text-xs">
           <LoaderCircleIcon size={13} className="animate-spin" />
-          <span>
-            Uploading {uploadingCount}
-            {uploadingCount === 1 ? " shot" : " shots"}…
-          </span>
+          <span>{t("camera.uploadingCount", { count: uploadingCount })}</span>
         </div>
       ) : null}
     </div>
@@ -108,16 +120,18 @@ function BarButton({ children, className, ...props }) {
 }
 
 export default function CameraPage() {
-  useSeo({ title: "Camera" });
-
   const { eventId: encodedEventId } = useParams();
   const eventId = tryDecodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const t = useT();
+  const fmt = useFormat();
   const viewportHeight = useViewportHeight();
   // Ticks so the shutter closes on its own if the event finishes while the camera
   // is open, rather than at the next render that happens to come along.
   const now = useTicker();
+
+  useSeo({ title: t("camera.title") });
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -297,8 +311,8 @@ export default function CameraPage() {
         if (!cancelled) {
           setCameraError(
             err?.name === "NotAllowedError"
-              ? "Permission denied. Please refresh and give camera permission."
-              : "No camera device accessible. Please connect your camera or try a different browser.",
+              ? t("camera.permissionDenied")
+              : t("camera.noDevice"),
           );
         }
       }
@@ -464,7 +478,7 @@ export default function CameraPage() {
       <div className="absolute top-0 inset-x-0 bg-black/45 backdrop-blur-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex flex-row items-center justify-between gap-3">
         <BarButton
           onClick={() => navigate(`/events/${encodeId(eventId)}`)}
-          aria-label="Back to event"
+          aria-label={t("camera.backToEvent")}
         >
           <ArrowLeftIcon size={18} />
         </BarButton>
@@ -474,14 +488,14 @@ export default function CameraPage() {
             {event?.name || " "}
           </span>
           <span className="text-xs text-white/65">
-            {formatCountdown(event?.endAt)}
+            {fmt.countdown(event?.endAt)}
           </span>
         </div>
 
         {isCreator ? (
           <BarButton
             onClick={() => setInviteOpen(true)}
-            aria-label="Invite guests"
+            aria-label={t("camera.inviteGuests")}
           >
             <QrCodeIcon size={18} />
           </BarButton>
@@ -532,7 +546,7 @@ export default function CameraPage() {
           <button
             type="button"
             onClick={() => setGalleryOpen(true)}
-            aria-label="Open gallery"
+            aria-label={t("camera.openGallery")}
             className="size-12 shrink-0 rounded-xl overflow-hidden bg-white/15 text-white/70 flex items-center justify-center cursor-pointer transition-transform active:scale-90"
           >
             {lastShotSrc ? (
@@ -548,17 +562,17 @@ export default function CameraPage() {
 
           {ended ? (
             <span className="text-xs text-white/80 bg-white/15 rounded-full px-4 py-2.5">
-              Event ended
+              {t("event.ended")}
             </span>
           ) : shotsRemaining <= 0 ? (
             <span className="text-xs text-white/80 bg-white/15 rounded-full px-4 py-2.5">
-              All shots used
+              {t("camera.allShotsUsed")}
             </span>
           ) : (
             <button
               type="button"
               onClick={handleCapture}
-              aria-label="Take photo"
+              aria-label={t("camera.takePhoto")}
               className={cn(
                 "size-[4.25rem] shrink-0 rounded-full cursor-pointer",
                 "bg-white ring-[3px] ring-inset ring-black/15",
@@ -572,7 +586,7 @@ export default function CameraPage() {
           {numCameras > 1 ? (
             <BarButton
               onClick={handleFlip}
-              aria-label="Flip camera"
+              aria-label={t("camera.flip")}
               className="size-12"
             >
               <RefreshCwIcon size={19} />

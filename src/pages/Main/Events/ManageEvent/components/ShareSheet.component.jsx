@@ -17,12 +17,14 @@ import Button from "../../../../../components/Button.component";
 import Sheet from "../../../../../components/Sheet.component";
 import SectionLabel from "../../../../../components/SectionLabel.component";
 import { encodeId } from "../../../../../utils/idCodec.util";
+import { useT } from "../../../../../contexts/I18n.context";
 
 // Publishing a finished album. Every press of "Generate" mints a new link server-side,
 // so a host can hand a different one to each group — and the sheet only ever shows the
 // link it just made, because there is nothing to "look up": the last one is still live
 // wherever it was already sent.
 export default function ShareSheet({ open, setOpen, event }) {
+  const t = useT();
   const [link, setLink] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -65,7 +67,7 @@ export default function ShareSheet({ open, setOpen, event }) {
 
     const response = await shareService.create(event.id);
     if (response.ok) setLink(response.data);
-    else setError(response.data?.message || "Couldn't create a link just now.");
+    else setError(response.data?.message || t("share.error"));
 
     setGenerating(false);
   }
@@ -90,8 +92,8 @@ export default function ShareSheet({ open, setOpen, event }) {
     <Sheet
       open={open}
       setOpen={setOpen}
-      title="Share the album."
-      description="Anyone with the link can look through this album and save the photos in full quality — no account, no sign-in, nothing to install."
+      title={t("share.title")}
+      description={t("share.body")}
     >
       {!shareUrl ? (
         <div className="border-t border-border mt-6 pt-8 flex flex-col items-center gap-4">
@@ -101,7 +103,7 @@ export default function ShareSheet({ open, setOpen, event }) {
             disabled={generating}
           >
             <LinkIcon size={16} />
-            {generating ? "Generating…" : "Generate a link"}
+            {generating ? t("share.generating") : t("share.generate")}
           </Button>
 
           {error ? (
@@ -129,7 +131,7 @@ export default function ShareSheet({ open, setOpen, event }) {
           <div className="flex flex-row gap-2.5 justify-center mt-6">
             <Button variant="primary" onClick={handleShare}>
               {copied ? <CheckIcon size={16} /> : <LinkIcon size={16} />}
-              {copied ? "Copied" : "Share link"}
+              {copied ? t("common.copied") : t("share.shareLink")}
             </Button>
             <Button
               variant="secondary"
@@ -137,7 +139,7 @@ export default function ShareSheet({ open, setOpen, event }) {
               disabled={generating}
             >
               <RefreshCwIcon size={16} />
-              {generating ? "Generating…" : "New link"}
+              {generating ? t("share.generating") : t("share.newLink")}
             </Button>
           </div>
 
@@ -151,12 +153,14 @@ export default function ShareSheet({ open, setOpen, event }) {
           publishes the photos, the other is the card that was on the tables. */}
       {card?.hasImage ? (
         <div className="border-t border-border mt-8 pt-6">
-          <SectionLabel>Your template</SectionLabel>
+          <SectionLabel>{t("share.yourTemplate")}</SectionLabel>
 
           <div className="flex flex-row items-center gap-4 mt-4">
             <img
               src={templatesService.getImageSrc(event.id, card.generatedAt)}
-              alt={`${card.template?.name || "Template"} preview`}
+              alt={t("templates.preview", {
+                name: card.template?.name || t("templates.label"),
+              })}
               className="w-16 rounded-xl shadow-[0_6px_20px_-10px_rgba(0,0,0,0.4)]"
             />
 
@@ -167,7 +171,7 @@ export default function ShareSheet({ open, setOpen, event }) {
                 disabled={cardBusy}
               >
                 <DownloadIcon size={16} />
-                Download
+                {t("common.download")}
               </Button>
               <Button
                 variant="secondary"
@@ -175,7 +179,7 @@ export default function ShareSheet({ open, setOpen, event }) {
                 disabled={cardBusy}
               >
                 <Share2Icon size={16} />
-                Share
+                {t("common.share")}
               </Button>
             </div>
           </div>

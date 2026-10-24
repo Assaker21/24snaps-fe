@@ -14,7 +14,8 @@ import Input from "../../../../components/Input.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { encodeId, tryDecodeId } from "../../../../utils/idCodec.util";
-import { formatCountdown } from "../../../../utils/countdown.util";
+import { useT } from "../../../../contexts/I18n.context";
+import useFormat from "../../../../hooks/useFormat.hook";
 import { getCoverSrc } from "../../../../utils/cover.util";
 import cn from "../../../../utils/cn.util";
 import useSeo from "../../../../hooks/useSeo.hook";
@@ -24,6 +25,8 @@ export default function EventInvitationPage() {
   const eventId = tryDecodeId(encodedEventId);
   const navigate = useNavigate();
   const { user, setUser, loading: authLoading } = useAuth();
+  const t = useT();
+  const fmt = useFormat();
 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +35,9 @@ export default function EventInvitationPage() {
   const [error, setError] = useState(null);
 
   useSeo({
-    title: event?.name ? `You’re invited to ${event.name}` : "You’re invited",
+    title: event?.name
+      ? t("invitation.pageTitleNamed", { name: event.name })
+      : t("invitation.pageTitle"),
   });
 
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function EventInvitationPage() {
 
     if (!response.ok) {
       setError(
-        response.data?.message || "Couldn't join this event, try again.",
+        response.data?.message || t("invitation.joinError"),
       );
       setJoining(false);
       return;
@@ -90,18 +95,18 @@ export default function EventInvitationPage() {
   }
 
   if (authLoading || loading || !user || event?.isMember) {
-    return <LoadingScreen message="Unwrapping your invitation…" />;
+    return <LoadingScreen message={t("invitation.loading")} />;
   }
 
   if (!event) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
-        <h1 className="font-serif text-3xl">Nothing here</h1>
+        <h1 className="font-serif text-3xl">{t("event.notFound.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          This event doesn't exist or was deleted.
+          {t("event.notFound.body")}
         </p>
         <Link to="/events">
-          <Button variant="primary">Back to events</Button>
+          <Button variant="primary">{t("event.notFound.back")}</Button>
         </Link>
       </div>
     );
@@ -112,17 +117,19 @@ export default function EventInvitationPage() {
   const coverSrc = getCoverSrc(event);
   const shots =
     event.maxAttachmentsPerUser == null
-      ? "Unlimited shots"
-      : `${event.maxAttachmentsPerUser} shots available`;
+      ? t("invitation.unlimitedShots")
+      : t("invitation.shotsAvailable", {
+          count: event.maxAttachmentsPerUser,
+        });
 
   // The three reasons the door is shut. The server refuses the join in each case, so
   // this only decides what the card says instead of offering a name field.
   const closed = !event.activated
-    ? "This event hasn't been activated by its host yet."
+    ? t("invitation.notActivated")
     : event.ended
-      ? "This event has ended, so its camera is closed."
+      ? t("invitation.ended")
       : event.full
-        ? "This event is full — every spot has been taken."
+        ? t("invitation.full")
         : null;
 
   // The invitation card is the reference's full-bleed cover with everything
@@ -137,7 +144,9 @@ export default function EventInvitationPage() {
       <div className="relative flex flex-col items-center text-center px-6 pb-10 pt-16 gap-3 text-white">
         <span className="flex flex-row items-center gap-1.5 text-xs rounded-full px-3 py-1.5 bg-white/20 backdrop-blur-sm">
           <UserRoundIcon size={12} />
-          Invited by {event.creator?.firstName || "the host"}
+          {t("invitation.invitedBy", {
+            name: event.creator?.firstName || t("create.cover.theHost"),
+          })}
         </span>
 
         <h1 className="font-serif text-4xl max-w-80">{event.name}</h1>
@@ -145,7 +154,7 @@ export default function EventInvitationPage() {
         <div className="flex flex-row items-center gap-4 text-xs text-white/80">
           <span className="flex flex-row items-center gap-1.5">
             <ClockIcon size={12} />
-            {formatCountdown(event.endAt) || "Ended"}
+            {fmt.countdown(event.endAt) || t("countdown.ended")}
           </span>
           <span className="flex flex-row items-center gap-1.5">
             <ApertureIcon size={12} />
@@ -161,7 +170,7 @@ export default function EventInvitationPage() {
                 variant="primary"
                 className="w-full justify-center bg-white/85 text-foreground hover:brightness-105"
               >
-                Back to your events
+                {t("event.notFound.back")}
               </Button>
             </Link>
           </div>
@@ -169,7 +178,7 @@ export default function EventInvitationPage() {
           <div className="w-full max-w-sm flex flex-col gap-2.5 mt-5">
             <Input
               icon={<PencilIcon size={16} />}
-              placeholder="Enter your name"
+              placeholder={t("create.cover.enterName")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={cn(
@@ -182,8 +191,8 @@ export default function EventInvitationPage() {
               disabled={joining}
               className="w-full justify-center bg-white/85 text-foreground hover:brightness-105"
             >
-              {joining ? "Joining…" : "Take your camera"}
-              <ArrowRightIcon size={16} />
+              {joining ? t("invitation.joining") : t("invitation.join")}
+              <ArrowRightIcon size={16} className="rtl:-scale-x-100" />
             </Button>
 
             {error ? (
