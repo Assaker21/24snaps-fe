@@ -16,6 +16,14 @@ export default async function baseService(uri, options = {}) {
   const configHeaders = {
     "Content-Type": "application/json",
     "device-id": localStorage.getItem("deviceId"),
+    // Which client this is. There are three against one API now — this, the iOS app
+    // and the Android app — and the API's logger names it on every line, so a failure
+    // says where it came from. Stated rather than sniffed: the User-Agent is a guess
+    // (an in-app web view lies about it), this is a fact we are telling the server.
+    //
+    // It is never authentication: anyone can send any value, so nothing
+    // security-relevant hangs off it on either side.
+    "client-platform": "web",
     ...headers,
   };
 

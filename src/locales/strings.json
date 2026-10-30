@@ -171,6 +171,10 @@
       "en": "Sawwerna home",
       "ar-LB": "الصفحة الرئيسية لصوّرنا"
     },
+    "nav.openInApp": {
+      "en": "Open in app",
+      "ar-LB": "افتح في التطبيق"
+    },
     "nav.signingYouIn": {
       "en": "Signing you in",
       "ar-LB": "جاري تسجيل دخولك"

@@ -19,6 +19,7 @@ import PhotoGrid from "../../../../components/PhotoGrid.component";
 import PhotoViewer from "../../../../components/PhotoViewer.component";
 import TopBar from "../../../../components/TopBar.component";
 import PaymentSheet from "../../../../components/PaymentSheet.component";
+import OpenInApp from "../../../../components/OpenInApp.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import useTicker from "../../../../hooks/useTicker.hook";
 import useUploadQueue from "../../../../hooks/useUploadQueue.hook";
@@ -371,6 +372,11 @@ export default function ManageEventPage() {
             </Link>
           )}
         </div>
+
+        {/* The same URL this page is already at. Both apps claim it, so it opens the
+            app where one is installed and changes nothing where it isn't — and it
+            renders nothing on a desktop, where there is no app to open. */}
+        <OpenInApp className="mt-3 w-full" />
       </div>
 
       <div className="border-t border-border mx-4 mt-6" />

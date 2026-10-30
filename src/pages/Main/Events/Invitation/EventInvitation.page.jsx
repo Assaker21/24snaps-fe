@@ -12,6 +12,7 @@ import usersService from "../../../../services/users.service";
 import Button from "../../../../components/Button.component";
 import Input from "../../../../components/Input.component";
 import LoadingScreen from "../../../../components/LoadingScreen.component";
+import OpenInApp from "../../../../components/OpenInApp.component";
 import { useAuth } from "../../../../contexts/Auth.context";
 import { encodeId, tryDecodeId } from "../../../../utils/idCodec.util";
 import { useT } from "../../../../contexts/I18n.context";
@@ -200,6 +201,12 @@ export default function EventInvitationPage() {
                 {error}
               </p>
             ) : null}
+
+            {/* The QR code that brought them here is the same https link both apps
+                claim, so this is only for the visitor who ended up in a browser anyway
+                — an unverified App Link, or "open in browser" from a chat app. It
+                renders nothing on a desktop, where there is no app to open. */}
+            <OpenInApp tone="dark" className="w-full" />
           </div>
         )}
       </div>
